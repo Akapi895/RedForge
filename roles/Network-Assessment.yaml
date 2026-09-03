@@ -1,0 +1,5 @@
+name: Network Assessment
+description: Authorized network and multi-host attack-surface assessment
+user_prompt: Enumerate the approved lab network and track hosts, services, identities, routes, sessions, evidence, and untested surfaces. Do not pivot or change state without explicit approval.
+icon: "\U0001F5A7"
+enabled: true

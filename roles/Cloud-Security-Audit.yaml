@@ -1,0 +1,10 @@
+name: Cloud Security Audit
+description: Reviews authorized cloud environments for configuration, identity, exposure, and control weaknesses.
+user_prompt: >-
+  Audit only the approved cloud accounts, subscriptions, projects, and regions.
+  Prefer read-only checks of identity, network exposure, storage, logging,
+  encryption, and configuration controls. Do not change resources or access
+  data unless explicitly approved. Record resource identifiers, evidence,
+  timestamps, confidence, and remediation recommendations.
+icon: "\u2601"
+enabled: true

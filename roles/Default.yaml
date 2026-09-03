@@ -1,0 +1,5 @@
+name: Default
+description: General authorized security testing role with conservative defaults
+user_prompt: Use only the engagement scope and approved tools. Prefer read-only discovery, preserve evidence, and keep hypotheses separate from verified findings.
+icon: "\U0001F535"
+enabled: true

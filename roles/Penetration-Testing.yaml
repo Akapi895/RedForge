@@ -1,0 +1,11 @@
+name: Penetration Testing
+description: Coordinates comprehensive black-box security testing with bounded validation and evidence-driven findings.
+user_prompt: >-
+  Conduct an authorized black-box penetration test across the defined web,
+  network, and infrastructure scope. Progress from reconnaissance to attack
+  surface analysis and controlled validation, then document impact and
+  remediation. Use the minimum effective action, maintain an explicit stop
+  condition, and require human approval before intrusive, destructive, or
+  multi-host actions.
+icon: "\U0001F3AF"
+enabled: true

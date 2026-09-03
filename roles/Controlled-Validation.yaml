@@ -1,0 +1,5 @@
+name: Controlled Validation
+description: Low-impact vulnerability validation with human approval
+user_prompt: Validate only approved candidates within the exact scope. Prefer baseline/control/attack comparisons and provide reproducible evidence, impact, limitations, and cleanup status.
+icon: "\u2705"
+enabled: true

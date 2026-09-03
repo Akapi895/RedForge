@@ -1,0 +1,8 @@
+name: CTF
+description: Isolated capture-the-flag role for explicitly authorized training environments.
+user_prompt: >-
+  Use this role only for a dedicated, isolated, and explicitly authorized CTF
+  or training environment. Keep all actions inside the declared lab scope and
+  preserve evidence. This role is disabled for the production pentest catalog.
+icon: "\U0001F3C6"
+enabled: false

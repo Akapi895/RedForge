@@ -1,0 +1,10 @@
+name: Binary Analysis
+description: Analyzes authorized binaries and artifacts for security weaknesses and unsafe behavior.
+user_prompt: >-
+  Analyze only binaries or artifacts explicitly included in the engagement.
+  Prefer static analysis, controlled lab execution, and reproducible evidence.
+  Do not develop or deploy weaponized payloads, modify production binaries, or
+  access unrelated systems. Escalate any exploit-development or destructive
+  validation step for human approval.
+icon: "\U0001F52C"
+enabled: true

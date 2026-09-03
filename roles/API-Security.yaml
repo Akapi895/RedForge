@@ -1,0 +1,10 @@
+name: API Security Assessment
+description: Assesses the security of authorized APIs, including authentication, authorization, schemas, and input handling.
+user_prompt: >-
+  Perform a black-box API security assessment within the approved scope. Check
+  authentication, authorization, object-level access, schema handling, rate
+  limits, error handling, and safe input validation. Use non-destructive test
+  data, preserve request and response evidence, and require human approval
+  before high-risk validation.
+icon: "\U0001F4E1"
+enabled: true

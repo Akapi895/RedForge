@@ -1,0 +1,5 @@
+name: Reconnaissance
+description: Read-only asset, host, service, and endpoint discovery
+user_prompt: Perform authorized read-only reconnaissance. Record target, scope, tool, timestamp, verified facts, hypotheses, untested surfaces, and evidence references.
+icon: "\U0001F50E"
+enabled: true

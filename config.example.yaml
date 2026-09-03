@@ -1,0 +1,451 @@
+# ============================================
+# RedForge configuration file
+# ============================================
+# This file can also be edited through the Web interface.
+# Click the "Settings" button in the top-right corner to edit it.
+# ============================================
+
+# ============================================
+# System settings
+# ============================================
+
+# Version displayed by the frontend (optional; the application default is used when empty)
+version: "v1.7.17"
+# Server configuration
+server:
+  host: 0.0.0.0 # Bind address; 0.0.0.0 listens on all network interfaces.
+  port: 8080 # Service port; without TLS, use http://localhost:8080.
+  # Exact origins for other trusted Web integrations. Chromium extensions detect their origin automatically; do not use wildcards.
+  # cors_allowed_origins:
+  #   - https://trusted-integration.example
+  # --- Optional: HTTPS + HTTP/2 (helps browser connection limits and improves concurrent Deep streaming) ---
+  # TLS is enabled when tls_enabled, tls_auto_self_sign, or both certificate paths are enabled.
+  # When enabled, use https://127.0.0.1:<port>/; HTTP requests may be redirected with status 308.
+  tls_enabled: true
+  # Whether plaintext HTTP is redirected to HTTPS (default true; the same port can serve both protocols).
+  # tls_http_redirect: true
+  # Option A (recommended for production): paths to a PEM certificate and private key.
+  # tls_cert_path: /path/to/fullchain.pem
+  # tls_key_path: /path/to/privkey.pem
+  # Option B (local/testing only): create an in-memory self-signed certificate when files are unavailable.
+  tls_auto_self_sign: true
+# Authentication configuration
+auth:
+  session_duration_hours: 12 # Login lifetime in hours; users must log in again after expiration.
+# Logging configuration
+log:
+  level: info # Log level: debug, info, warn, or error.
+  output: stdout # Log destination: stdout, stderr, or a file path.
+# Platform operation audit (see Settings -> Audit Logs; conversation bodies and every tool call are excluded).
+audit:
+  enabled: true
+  retention_days: 15 # 0 disables automatic cleanup.
+  max_detail_bytes: 8192
+  auth_failure_cooldown_seconds: 60 # Minimum audit interval for failed login/password changes from one IP; -1 disables throttling.
+# MCP monitoring execution-record retention (tool_executions table).
+monitor:
+  retention_days: 90 # Defaults to 90 when omitted; 0 disables automatic cleanup.
+# ============================================
+# Conversation configuration
+# ============================================
+
+# AI channel configuration (multiple OpenAI-compatible or Claude channels are supported).
+# default_channel selects the channel for new conversations and tasks without an explicit channel.
+# Each channels.<id> entry requires api_key, base_url, and model.
+# Supported API providers include:
+#   - OpenAI: https://api.openai.com/v1
+#   - DeepSeek: https://api.deepseek.com/v1
+#   - Other OpenAI-compatible APIs
+# Common examples: gpt-4, gpt-3.5-turbo, deepseek-chat, and claude-3-opus.
+# provider: openai_compatible (default) or claude (native Eino Anthropic Messages API).
+ai:
+  default_channel: lab-model
+  channels:
+    lab-model:
+      name: Viettel MiniMax M3
+      provider: openai_compatible
+      base_url: https://stream-netmind.viettel.vn/aigw/ai/v1
+      api_key: "${CYBERSTRIKE_AI_API_KEY}"
+      model: MiniMax/MiniMax-M3
+      max_total_tokens: 120000
+      max_completion_tokens: 16384
+      # Eino reasoning mapping: DeepSeek/OpenAI use thinking or reasoning_effort; Claude 4.6+ uses adaptive and output_config.effort.
+      reasoning:
+        mode: off
+        effort: high # low | medium | high | max | xhigh; an empty value leaves the effort unspecified.
+        allow_client_reasoning: true # When false, ignore reasoning in the conversation request and use only this configuration.
+        profile: openai_compat # auto | deepseek_compat | openai_compat | output_config_effort
+        # extra_request_fields: {} # Optional advanced root-level JSON fields for administrators.
+    # qwen-plus:
+    #   name: Qwen Plus Fallback
+    #   provider: openai_compatible
+    #   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    #   api_key: sk-xxxxxxx
+    #   model: qwen-plus
+    #   max_total_tokens: 120000
+    #   max_completion_tokens: 32768
+# Vision analysis (analyze_image MCP tool; images are sent only for one VL call and the agent retains a text summary).
+vision:
+  enabled: false # Register analyze_image only when true and model is non-empty.
+  model: qwen-vl # Vision model name (required when enabled).
+  api_key: "" # Reuse the default AI channel api_key when empty.
+  base_url: "" # Reuse the default AI channel base_url when empty.
+  provider: # Reuse the default AI channel provider when empty (openai_compatible | claude).
+  max_image_bytes: 5242880 # Raw image limit in bytes; default 5 MB.
+  max_dimension: 2048 # Maximum long-edge dimension in pixels.
+  jpeg_quality: 82
+  max_payload_bytes: 524288 # Encoded payload limit sent to the VL API; default 512 KB.
+  skip_preprocess_below_bytes: 2097152 # Send the original below 2 MB when dimensions and payload fit; 0 always compresses.
+  detail: auto # low | high | auto（Eino ImageURLDetail）
+  timeout_seconds: 60
+# ============================================
+# Asset management (internet-wide asset search) configuration (optional).
+# ============================================
+# Used by the Asset Management -> Intelligence Collection page for FOFA, ZoomEye, Quake, and Shodan APIs.
+# Requests are proxied by the backend so keys are not exposed to the frontend; environment variables take precedence.
+fofa:
+  base_url: https://fofa.info/api/v1/search/all # Optional; the provider default is used when empty.
+  api_key: "" # FOFA API key (optional; configure it in Settings when possible).
+zoomeye:
+  base_url: https://api.zoomeye.ai/v2/search # Optional; the provider default is used when empty.
+  api_key: "" # ZoomEye API key; ZOOMEYE_API_KEY can also be used.
+quake:
+  base_url: https://quake.360.net/api/v3/search/quake_service # Optional; the provider default is used when empty.
+  api_key: "" # Quake API token; QUAKE_API_KEY can also be used.
+shodan:
+  base_url: https://api.shodan.io # Optional; the provider default is used when empty.
+  api_key: "" # Shodan API key; SHODAN_API_KEY can also be used.
+# Agent configuration
+# The AI summarizes the assessment when the iteration limit is reached.
+agent:
+  max_iterations: 12000 # Global limit shared by single, Deep, Supervisor, Plan-Execute, and sub-agents; agents/*.md can override it when >0.
+  tool_timeout_minutes: 60 # Maximum duration for one tool execution; 0 means unlimited and is not recommended.
+  tool_wait_timeout_seconds: 300 # Maximum wait in the current turn; returns execution_id while the worker continues; 0 waits until completion.
+  external_mcp_max_concurrent_per_server: 5 # Concurrent tools per external MCP server; 0 defaults to 2; negative means unlimited.
+  external_mcp_max_concurrent_total: 16 # Global concurrent external MCP tools; 0 defaults to 16; negative means unlimited.
+  external_mcp_circuit_failure_threshold: 15 # Consecutive failures before an external MCP server is opened; 0 defaults to 3; negative disables the breaker.
+  external_mcp_circuit_cooldown_seconds: 60 # Circuit-breaker cooldown in seconds; 0 defaults to 60.
+  shell_no_output_timeout_seconds: 1200 # Stop execute/exec after no new output; 0 defaults to 300; -1 disables the timeout.
+  workspace_root_dir: "" # Root for isolated per-session workspaces; empty uses tmp/workspace projects or conversations. Do not use the system /tmp.
+  # system_prompt_path: prompts/single-agent.md # Optional single-agent system prompt path relative to this configuration file.
+
+  system_prompt_path: ""
+# Human-in-the-loop (HITL) global whitelist: these tools always bypass approval and are merged with the conversation-page whitelist.
+# For non-whitelisted tools reviewed by the audit agent, the prompt is selected by the conversation HITL mode:
+#   approval → audit_agent_prompt
+#   review_edit -> audit_agent_prompt_review_edit (approve with edited arguments)
+hitl:
+  # Global default HITL mode: off, approval, or review_edit; new conversations inherit it unless overridden.
+  default_mode: off
+  # Global default reviewer: human or audit_agent; new conversations inherit it unless overridden.
+  default_reviewer: human
+  # Global approval timeout in seconds: 300 is five minutes; 0 means no timeout.
+  default_timeout_seconds: 300
+  # Optional model for the audit agent; empty fields reuse the default AI channel. A smaller model can reduce approval cost.
+  audit_model:
+    provider: "" # openai / claude; empty follows the default channel provider.
+    base_url: "" # Empty follows the default channel base_url.
+    api_key: "" # Empty follows the default channel api_key.
+    model: "" # Empty follows the default channel model; examples include gpt-4o-mini and deepseek-chat.
+  # Retention for decided audit records; defaults to 90 days, and 0 disables automatic cleanup.
+  retention_days: 90
+  # Add or remove the real tool names in your environment; names are case-insensitive. Use [] to require approval globally.
+  tool_whitelist: [read_file, ls, list_dir, glob, grep, tool_search, upsert_project_fact, get_project_fact, list_project_facts, search_project_facts, list_vulnerabilities, get_vulnerability, get_asset, query_assets, list_knowledge_risk_types, get_tool_execution, wait_tool_execution, batch_task_list, batch_task_get, manage_webshell_list, c2_event, c2_file]
+  # audit_agent_prompt: |  # Approval mode; empty uses the built-in prompt and can be edited in the HITL page.
+  # audit_agent_prompt_review_edit: |  # Review-and-edit mode; empty uses the built-in prompt.
+
+  legacy_audit_agent_prompt: |-
+    You are the RedForge human-in-the-loop audit agent. Review the proposed
+    tool call and decide whether it is safe for the authorized engagement.
+
+    The input is JSON containing hitlMode, toolName, arguments,
+    argumentsObj, userMessage, thinking, reasoningChain, and planning.
+
+    Always reject actions that would delete or corrupt important data, change
+    accounts or privileges, alter production configuration, stop critical
+    services, cause denial of service, leave unapproved persistence, or access
+    out-of-scope systems. Require explicit human approval for intrusive,
+    state-changing, credential, payload, multi-host, shell, or data-access
+    actions. Read-only discovery may be approved when scope is explicit.
+
+    Inspect the actual command and arguments. Do not infer safety from a test
+    filename, a local execution label, or a timeout. If the action or its
+    consequence is unclear, reject or escalate rather than guessing.
+
+    Return exactly one JSON line without a Markdown code block:
+    {"decision":"approve"|"reject","comment":"action, consequence, and rule"}
+  legacy_audit_agent_prompt_review_edit: |-
+    Use the same rules as legacy_audit_agent_prompt. When approval is safe,
+    editedArguments may contain a complete replacement argument object that
+    only narrows scope or removes risk. Never expand the target, privileges,
+    data access, or destructive capability.
+
+    Return exactly one JSON line without a Markdown code block:
+    {"decision":"approve"|"reject","comment":"action, consequence, and rule","editedArguments":{...}}
+# Multi-agent and Eino single-agent configuration (CloudWeGo Eino ADK; single-agent /api/eino-agent*, multi-agent /api/multi-agent*).
+# Dependencies are downloaded from go.mod; if downloads fail, configure GOPROXY as needed.
+# Deep, Plan-Execute, and Supervisor are selected through orchestration in the conversation or WebShell request; robots use robot_default_agent_mode.
+multi_agent:
+  enabled: true
+  robot_default_agent_mode: eino_single # Default for WeCom, DingTalk, and Lark bots: eino_single | deep | plan_execute | supervisor.
+  batch_use_multi_agent: false # When true, each batch-queue task also uses Eino multi-agent mode at higher cost.
+  # Plan-Execute only: maximum execute<->replan loops; 0 uses the Eino default of 10. ReAct rounds use agent.max_iterations.
+  plan_execute_loop_max_iterations: 0
+  sub_agent_user_context_max_runes: 0 # User text injected into sub-agent task descriptions; 0 means unlimited, positive values cap total characters, negative disables it.
+  without_general_sub_agent: false # When false, retain the built-in general-purpose sub-agent for Deep mode.
+  without_write_todos: false
+  orchestrator_instruction: "" # Deep orchestrator: agents/orchestrator.md or the single file marked kind: orchestrator; empty falls back to the Eino default.
+  orchestrator_instruction_plan_execute: "" # Plan-Execute orchestrator: agents/orchestrator-plan-execute.md first; empty falls back to the built-in prompt.
+  orchestrator_instruction_supervisor: "" # Supervisor orchestrator: agents/orchestrator-supervisor.md first; empty falls back to the built-in prompt.
+  # Eino Skills: progressive disclosure plus optional local filesystem/Shell access through the eino-ext local backend.
+  eino_skills:
+    disable: false # When true, do not register progressive-disclosure middleware or local FS/Shell tools.
+    filesystem_tools: true # When true, register read_file/glob/grep/write/edit/execute; use only in authorized environments.
+    skill_tool_name: skill # Model-facing tool name for loading skills; keep it aligned with the skill documentation.
+  # Eino ADK middleware settings for Deep, Supervisor, and Plan-Execute executors.
+  # In Plan-Execute mode these patch/reduction/tool_search/plantask settings also apply to the executor; planners do not mount MCP pre-middleware.
+  eino_middleware:
+    patch_tool_calls: true # Repair historical tool calls without tool_result; useful after streaming interruption or retry.
+    tool_search_enable: true # Enable tool_search when the tool count reaches the threshold; false exposes all tools in context.
+    tool_search_min_tools: 20 # Minimum tool count before tool_search is enabled.
+    tool_search_always_visible: 12 # Number of tools always exposed directly; remaining tools require tool_search.
+    tool_search_always_visible_tools: [read_file, glob, grep, analyze_image, write_file, edit_file, execute, task, transfer_to_agent, exit, write_todos, skill, tool_search, TaskCreate, TaskGet, TaskUpdate, TaskList, record_vulnerability, list_vulnerabilities, get_vulnerability, get_tool_execution, wait_tool_execution, cancel_tool_execution, list_knowledge_risk_types, search_knowledge_base, webshell_exec, webshell_file_list, webshell_file_read, webshell_file_write, manage_webshell_list, manage_webshell_add, manage_webshell_update, manage_webshell_delete, manage_webshell_test, batch_task_list, batch_task_get, batch_task_start, batch_task_rerun, batch_task_pause, batch_task_update_metadata, batch_task_update_schedule, batch_task_schedule_enabled, batch_task_update_task, batch_task_remove_task, batch_task_delete, batch_task_create, batch_task_add_task, http-framework-test, exec] # Built-in always-visible tool allowlist; takes precedence over the numeric limit.
+    plantask_enable: true # Mount TaskCreate/Get/Update/List structured task-board tools; requires eino_skills and an existing skills_dir.
+    plantask_rel_dir: .eino/plantask # Task files relative to skills_dir, separated by conversation ID.
+    reduction_enable: true # Truncate large tool output and persist it under tmp/reduction; context keeps a preview.
+    reduction_max_length_for_trunc: 100000 # Results larger than this byte length are persisted and returned as a truncated preview.
+    reduction_max_tokens_for_clear: 60000 # Historical tool-result cleanup threshold; keep it below the summarization budget.
+    reduction_root_dir: "" # Optional root for truncation and cleanup files; empty uses isolated tmp/reduction.
+    reduction_clear_exclude: [] # Additional tools excluded from cleanup; merged with built-in task/transfer/exit exclusions.
+    reduction_sub_agents: true # Apply reduction to sub-agents as well when true.
+    summarization_trigger_ratio: 0.8 # Summarization trigger as max_total_tokens * ratio; recommended 0.75-0.85.
+    summarization_output_reserve_tokens: 8192 # Tokens reserved for the summary output.
+    summarization_emit_internal_events: true # Emit internal summarization events for diagnostics.
+    summarization_user_intent_ledger_max_runes: 96000 # Maximum characters of the original user-intent and constraints ledger injected after compaction.
+    summarization_user_intent_ledger_entry_max_runes: 16000 # Maximum characters per ledger entry.
+    latest_user_message_max_runes: 48000 # Maximum characters of the latest user message visible to the model; oversized input is persisted with a preview.
+    latest_user_message_head_runes: 24000 # Head preview size for oversized latest user messages.
+    latest_user_message_tail_runes: 24000 # Tail preview size for oversized latest user messages.
+    plan_execute_user_input_budget_ratio: 0.35 # User-input budget ratio shared by planner, replanner, and executor.
+    plan_execute_executed_steps_budget_ratio: 0.2 # Budget ratio for executed steps in Plan-Execute mode.
+    plan_execute_max_step_result_runes: 4000 # Maximum characters retained per Plan-Execute step result.
+    plan_execute_keep_last_steps: 8 # Keep the most recent steps in full and fold earlier steps into titles.
+    checkpoint_dir: "" # ADK checkpoints are not used for chat; cross-turn state uses conversations.last_react_*.
+    model_retry_max_retries: 0 # Native Eino ChatModel retries for transient failures; 0 uses the default of 4.
+    model_retry_max_backoff_sec: 0 # Maximum retry backoff in seconds; 0 uses the default of 30.
+    model_failover_channels: [] # AI channel IDs tried after retries are exhausted, for example [qwen-plus].
+    model_failover_max_retries: 0 # Maximum fallback attempts; 0 tries all configured failover channels.
+    empty_response_continue_max_attempts: 0 # Retry when a run succeeds without assistant text; 0 uses the default of 5.
+    deep_output_key: final_answer # Session key for the final Deep/Supervisor/eino_single answer.
+    task_tool_description_prefix: "" # Optional custom prefix for the Deep task tool description.
+  # Eino callbacks and OpenTelemetry framework spans; user-facing trace events are disabled by default.
+  eino_callbacks:
+    enabled: true
+    # log_only = Zap + OTel only (recommended default); sse/full also enables streaming callback copies and stream hooks.
+    mode: log_only
+    sse_trace_to_client: false # When true with mode sse/full, send eino_trace_* events to the frontend timeline for diagnostics.
+    max_input_summary_runes: 400
+    max_output_summary_runes: 400
+    zap_verbose: false # When true, debug logs include input/output summaries.
+    otel:
+      enabled: true
+      service_name: cyberstrike-ai
+      exporter: stdout # none | stdout (local development) | otlphttp (production collector).
+      otlp_endpoint: localhost:4318 # host:port for otlphttp; the path is fixed to /v1/traces.
+      sample_ratio: 1.0 # 0-1; ParentBased + TraceIDRatio sampling.
+# Database configuration
+database:
+  path: data/conversations.db # SQLite database for conversations and messages.
+  knowledge_db_path: data/knowledge.db # Optional knowledge-base database; empty reuses the conversation database.
+# ============================================
+# Task management configuration
+# ============================================
+# Task settings are included in the conversation configuration.
+
+# ============================================
+# Vulnerability management configuration
+# ============================================
+
+# Security tool configuration
+# The application loads all .yaml tool definitions from this directory.
+# Recommended: create one configuration file per tool under tools/.
+security:
+  tools_dir: tools # Tool configuration directory relative to this file.
+  # Tool-description mode controls which text is exposed to the AI/API.
+  #   short - Prefer short_description to reduce token usage; fall back to description.
+  #   full  - Use the detailed description.
+  tool_description_mode: full
+# ============================================
+# MCP configuration
+# ============================================
+
+# MCP protocol configuration
+# MCP (Model Context Protocol) registers and invokes tools.
+mcp:
+  enabled: false # Enable the HTTP MCP server.
+  host: 127.0.0.1 # MCP bind address; configure network access controls before remote exposure.
+  port: 8081 # MCP server port.
+  auth_header: "X-MCP-Token" # Optional global service-credential header; normal calls should use a user Bearer token.
+  auth_header_value: "" # Global service credential; used only when allow_global_access=true.
+  allow_global_access: false # High-risk compatibility mode mapping a static key to a global service identity.
+# External MCP configuration
+external_mcp:
+  servers: {}
+# Built-in C2: set false for a chat/knowledge-only host to avoid listeners and C2 MCP tools; omitted defaults to enabled.
+c2:
+  enabled: true
+# ============================================
+# Knowledge-base configuration
+# ============================================
+knowledge:
+  enabled: false # Enable knowledge retrieval.
+  base_path: knowledge_base # Knowledge-base directory relative to this file.
+  embedding:
+    provider: openai # Embedding provider; currently supports openai.
+    model: text-embedding-v4 # Embedding model name.
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1 # Empty reuses the default AI channel base_url.
+    api_key: sk-xxxxxxx # Empty reuses the default AI channel api_key.
+  retrieval:
+    top_k: 5 # Number of top results returned by retrieval.
+    similarity_threshold: 0.4 # Cosine-similarity threshold from 0 to 1; lower results are filtered.
+    # Eino MultiQuery rewrites the query, performs multiple vector searches, and fuses the results.
+    multi_query:
+      max_queries: 4 # Maximum rewritten variants, including semantic coverage; 3-4 is recommended.
+    # Reranking is always enabled: DashScope uses gte-rerank; other OpenAI-compatible endpoints use /v1/rerank.
+    rerank:
+      provider: "" # Empty infers dashscope or cohere from base_url.
+      model: "" # Empty selects gte-rerank for DashScope or rerank-multilingual-v3.0 for Cohere.
+      base_url: "" # Empty reuses the embedding or default AI channel base_url.
+      api_key: "" # Empty reuses the embedding or default AI channel api_key.
+    post_retrieve:
+      prefetch_top_k: 20 # Vector candidates per MultiQuery variant; 0 uses max(top_k*4, 20).
+      max_context_chars: 0 # 0 means unlimited; otherwise caps returned Unicode characters across chunks.
+      max_context_tokens: 0 # 0 means unlimited; otherwise caps total tiktoken tokens.
+    sub_index_filter: ""
+  # ============================================
+  # Indexing configuration for provider API limits.
+  # ============================================
+  indexing:
+    # Chunking configuration.
+    chunk_size: 512 # Maximum tokens per chunk; long text is split into multiple chunks.
+    chunk_overlap: 50 # Overlap between chunks to preserve context.
+    max_chunks_per_item: 0 # Maximum chunks per item; 0 means unlimited.
+    # Rate-limit configuration to reduce 429 responses.
+    max_rpm: 0 # Maximum requests per minute; 0 means unlimited.
+    rate_limit_delay_ms: 300 # Delay between requests in milliseconds; 0 disables the delay.
+    # Examples: 200 requests/minute is about 300 ms; 100 requests/minute is about 600 ms.
+
+    # Retry configuration.
+    max_retries: 3 # Maximum retries; defaults to 3 for rate limits or server errors.
+    retry_delay_ms: 1000 # Initial retry delay in milliseconds; the delay increases after each retry.
+    # Chunk strategy: markdown_then_recursive splits by Markdown headings first; recursive uses recursive splitting only.
+    chunk_strategy: markdown_then_recursive
+    # Embedding HTTP request timeout in seconds; 0 uses the built-in default, usually 120.
+    request_timeout_seconds: 120
+    # When true, indexing prefers the file_path content through Eino FileLoader; false uses database text and falls back to it if file access fails.
+    prefer_source_file: false
+    # Maximum texts per embedding API request. Keep it within the provider limit; some compatible APIs allow at most 10.
+    batch_size: 10
+    # Eino indexer.WithSubIndexes: logical partition labels stored in sub_indexes; retrieval can filter with sub_index_filter.
+    sub_indexes: []
+# ============================================
+# Bot configuration (WeCom, DingTalk, Lark, Telegram, Slack, Discord, and QQ).
+# ============================================
+ # Use these integrations to chat with RedForge from mobile or collaboration platforms.
+# Configure them under Settings -> Bot Settings.
+robots:
+  wechat: # WeChat iLink (personal WeChat ClawBot; QR-code binding).
+    enabled: false
+    # Default authentication is user_binding; service_account requires restricting real senders.
+    auth:
+      mode: user_binding # user_binding | service_account
+      # service_user_id: "admin or the RBAC user ID of a dedicated service account"
+      # allowed_external_users: ["t:tenant|u:sender"]
+    bot_token: ""
+    ilink_bot_id: ""
+    ilink_user_id: ""
+    base_url: https://ilinkai.weixin.qq.com
+    bot_type: "3"
+    bot_agent: RedForge/1.0
+  wecom: # WeCom.
+    enabled: false
+    auth:
+      mode: user_binding
+    token: ""
+    encoding_aes_key: ""
+    corp_id: ""
+    secret: ""
+    agent_id: 0
+  dingtalk: # DingTalk.
+    enabled: false
+    auth:
+      mode: user_binding
+    client_id: ""
+    client_secret: ""
+    allow_conversation_id_fallback: false
+  lark: # Lark.
+    enabled: false
+    auth:
+      mode: user_binding
+    app_id: ""
+    app_secret: ""
+    verify_token: ""
+    allow_chat_id_fallback: false
+  telegram: # Telegram
+    enabled: false
+    auth:
+      mode: user_binding
+    bot_token: ""
+    bot_username: ""
+    allow_group_messages: false
+  slack: # Slack
+    enabled: false
+    auth:
+      mode: user_binding
+    bot_token: ""
+    app_token: ""
+  discord: # Discord
+    enabled: false
+    auth:
+      mode: user_binding
+    bot_token: ""
+    allow_guild_messages: false
+  qq: # QQ bot.
+    enabled: false
+    auth:
+      mode: user_binding
+    app_id: ""
+    client_secret: ""
+    sandbox: true
+# ============================================
+# Skills configuration
+# ============================================
+
+# Each skill subdirectory contains a standard SKILL.md with name and description front matter plus optional supporting files; no SKILL.yaml is required.
+# Example: skills/cyberstrike-eino-demo/
+skills_dir: skills # Skills directory relative to this configuration file.
+# ============================================
+# Multi-agent Markdown definitions (single source of truth)
+# ============================================
+# Each .md file has YAML front matter with name, id, description, tools, bind_role, optional max_iterations, and optional kind: orchestrator.
+# The main agent is orchestrator.md or the only file marked kind: orchestrator; it is excluded from the task sub-agent list.
+# The multi_agent block may still define sub_agents; matching IDs from Markdown files override those definitions.
+agents_dir: agents
+# ============================================
+# Role configuration
+# ============================================
+
+# The application loads every .yaml role definition from this directory.
+# Create one file per role, for example roles/CTF.yaml or roles/Default.yaml.
+roles_dir: roles # English role configuration directory (relative to this config file)
+# ============================================
+# Project management and fact blackboard
+# ============================================
+project:
+  enabled: true
+  # default_project_id: "" # Optional default project ID for bot or batch-created conversations.
+  fact_index_max_runes: 65000
+  # Fact-relation overview budget reserved from the index budget.
+  fact_index_path_max_runes: 10000
+  fact_summary_max_runes: 24000
+  default_inject_deprecated: false

@@ -1,0 +1,10 @@
+name: Web Framework Testing
+description: Identifies security weaknesses and unsafe configuration in authorized web frameworks and middleware.
+user_prompt: >-
+  Review the authorized web framework and middleware through observable
+  black-box behavior, version evidence, configuration indicators, and safe
+  validation. Do not assume a version is vulnerable without verification. Keep
+  requests low impact and record the evidence, affected component, confidence,
+  and remediation guidance.
+icon: "\U0001F310"
+enabled: true

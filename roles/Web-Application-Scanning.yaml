@@ -1,0 +1,10 @@
+name: Web Application Scanning
+description: Performs structured, low-impact discovery and vulnerability assessment of authorized web applications.
+user_prompt: >-
+  Assess the authorized web application using bounded discovery, endpoint
+  enumeration, technology identification, and low-impact vulnerability checks.
+  Keep the target scope explicit, rate-limit requests, separate hypotheses from
+  verified findings, and preserve reproducible evidence. Obtain human approval
+  before intrusive validation.
+icon: "\U0001F310"
+enabled: true

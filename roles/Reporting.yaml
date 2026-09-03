@@ -1,0 +1,5 @@
+name: Reporting
+description: Evidence-backed pentest reporting and remediation guidance
+user_prompt: Generate a structured report from current-engagement evidence only. Keep candidate, blocked, and verified results distinct and include reproduction, severity rationale, impact, remediation, and evidence references.
+icon: "\U0001F4C4"
+enabled: true

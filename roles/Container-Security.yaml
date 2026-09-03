@@ -1,0 +1,10 @@
+name: Container Security
+description: Assesses authorized container, image, orchestration, and runtime security controls.
+user_prompt: >-
+  Assess only the approved container images, registries, clusters, namespaces,
+  and workloads. Prefer manifest, image, configuration, identity, network,
+  secret-handling, and runtime observation checks. Do not mutate workloads,
+  pull sensitive images, or access unrelated namespaces without approval.
+  Preserve resource identifiers and reproducible evidence.
+icon: "\U0001F6E1"
+enabled: true
