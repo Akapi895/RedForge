@@ -11,10 +11,10 @@
 
 CyberStrikeAI connects planning, execution, human oversight, evidence, and replay in one auditable workspace. Built in Go, it combines Eino-powered agents, MCP-native tools, RAG knowledge, visual workflows, and attack-chain modeling and analysis for authorized security operations.
 
-**Start here:** [Quick start](#quick-start-one-command-deployment) · [Documentation](docs/en-US/README.md) · [Security hardening](docs/en-US/security-hardening.md)
+**Start here:** [Quick start](#quick-start-one-command-deployment) · [Documentation](docs/README.md) · [Security hardening](docs/security-hardening.md)
 
 > [!IMPORTANT]
-> Use CyberStrikeAI only on systems you own or are explicitly authorized to test. For shared or production environments, review the [security model](docs/en-US/security-model.md) and [hardening guide](docs/en-US/security-hardening.md) before enabling high-risk tools, WebShell, or C2 capabilities.
+> Use CyberStrikeAI only on systems you own or are explicitly authorized to test. For shared or production environments, review the [security model](docs/security-model.md) and [hardening guide](docs/security-hardening.md) before enabling high-risk tools, WebShell, or C2 capabilities.
 
 ## Interface & Integration Preview
 
@@ -128,13 +128,13 @@ CyberStrikeAI connects planning, execution, human oversight, evidence, and repla
 - 🧑‍⚖️ **Human in the loop** provides approval modes, tool allowlists, audit-agent review, and traceable decisions.
 - 🔐 **Platform RBAC** supports multiple users, system and custom roles, scoped permissions, ownership, and explicit assignments.
 - 🔒 **Security and audit** provide authenticated access, audit logs, SQLite persistence, and operational evidence retention.
-- 📄 **Result governance** stores the same capped tool result seen by the agent, protects resume paths from oversized historical output, and adds UI safeguards for large detail views. See [Tool Execution Governance](docs/en-US/tool-execution-governance.md).
+- 📄 **Result governance** stores the same capped tool result seen by the agent, protects resume paths from oversized historical output, and adds UI safeguards for large detail views. See [Tool Execution Governance](docs/tool-execution-governance.md).
 
 ### Security operations
 
 - 📁 **Conversation management** provides pinning, renaming, and batch organization.
 - 📂 **Projects and attack chains** connect cross-session facts, risk scoring, graph views, and step-by-step replay.
-- 🗂️ **Asset management** normalizes and deduplicates domains, IP addresses, ports, and services; supports XLSX/CSV import and export, advanced filters and saved views, ownership and business metadata, cross-page bulk maintenance, and duplicate merging; and tracks scan coverage, linked vulnerabilities, and risk state. See the [Asset Management guide](docs/en-US/asset-management.md).
+- 🗂️ **Asset management** normalizes and deduplicates domains, IP addresses, ports, and services; supports XLSX/CSV import and export, advanced filters and saved views, ownership and business metadata, cross-page bulk maintenance, and duplicate merging; and tracks scan coverage, linked vulnerabilities, and risk state. See the [Asset Management guide](docs/asset-management.md).
 - 🛡️ **Vulnerability management** provides severity classification, lifecycle tracking, filtering, and statistics.
 - 📋 **Batch tasks** provide queued execution, editing, status tracking, and retained results.
 - 📱 **Chatbots** connect Personal WeChat, WeCom, DingTalk, Lark, Telegram, Slack, Discord, and QQ Bot.
@@ -144,7 +144,7 @@ CyberStrikeAI connects planning, execution, human oversight, evidence, and repla
 - 🐚 **WebShell management** provides connection management, a virtual terminal, file operations, and AI-assisted workflows.
 - 📡 **Built-in C2** provides listeners, encrypted beacons, sessions, task queues, payload helpers, and live events.
 
-> WebShell, C2, and other high-risk capabilities are for systems you own or are explicitly authorized to test. See the [security model](docs/en-US/security-model.md) and [hardening guide](docs/en-US/security-hardening.md).
+> WebShell, C2, and other high-risk capabilities are for systems you own or are explicitly authorized to test. See the [security model](docs/security-model.md) and [hardening guide](docs/security-hardening.md).
 
 ## Plugins
 
@@ -304,7 +304,7 @@ ai:
       model: "your-model"
 ```
 
-`openai` is a backward-compatible runtime field; maintain new model settings in `ai.channels`. Do not commit real credentials. Review the [configuration reference](docs/en-US/configuration.md), [recommended profiles](docs/en-US/configuration-profiles.md), and [security hardening guide](docs/en-US/security-hardening.md) before exposing the service beyond localhost.
+`openai` is a backward-compatible runtime field; maintain new model settings in `ai.channels`. Do not commit real credentials. Review the [configuration reference](docs/configuration.md), [recommended profiles](docs/configuration-profiles.md), and [security hardening guide](docs/security-hardening.md) before exposing the service beyond localhost.
 
 ## RedForge fork and runtime validation
 
@@ -414,11 +414,11 @@ before committing.
 
 ## Related documentation
 
-- **New users:** [Deployment](docs/en-US/deployment.md) → [Configuration](docs/en-US/configuration.md) → [Troubleshooting](docs/en-US/troubleshooting.md)
-- **Operators:** [Configuration profiles](docs/en-US/configuration-profiles.md) → [Security hardening](docs/en-US/security-hardening.md) → [Runbooks](docs/en-US/runbooks.md)
-- **Integrators:** [API reference](docs/en-US/api-reference.md) → [API recipes](docs/en-US/api-recipes.md) → [MCP federation](docs/en-US/mcp-federation.md)
-- **Contributors:** [Developer guide](docs/en-US/developer-guide.md) → [Testing](docs/en-US/testing.md) → [Contributing](docs/en-US/contributing-guide.md)
-- **All topics:** [English documentation](docs/en-US/README.md)
+- **New users:** [Deployment](docs/deployment.md) → [Configuration](docs/configuration.md) → [Troubleshooting](docs/troubleshooting.md)
+- **Operators:** [Configuration profiles](docs/configuration-profiles.md) → [Security hardening](docs/security-hardening.md) → [Runbooks](docs/runbooks.md)
+- **Integrators:** [API reference](docs/api-reference.md) → [API recipes](docs/api-recipes.md) → [MCP federation](docs/mcp-federation.md)
+- **Contributors:** [Developer guide](docs/developer-guide.md) → [Testing](docs/testing.md) → [Contributing](docs/contributing-guide.md)
+- **All topics:** [English documentation](docs/README.md)
 
 ## Project Layout
 

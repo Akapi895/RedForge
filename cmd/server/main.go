@@ -26,7 +26,7 @@ func main() {
 	var resetAdminPassword = flag.Bool("reset-admin-password", false, "Interactively reset the built-in admin password and exit")
 	flag.Parse()
 
-	// 环境变量兼容（便于 systemd/docker 等不传参场景）
+	// Support the environment variable for systemd/docker deployments without flags.
 	if *httpsBootstrap && *httpBootstrap {
 		fmt.Fprintln(os.Stderr, "--http and --https cannot be used together")
 		os.Exit(2)
@@ -38,7 +38,7 @@ func main() {
 		}
 	}
 
-	// 加载配置
+	// Load the configuration.
 	cp := strings.TrimSpace(*configPath)
 	if cp == "" {
 		cp = "config.yaml"
@@ -91,7 +91,7 @@ func main() {
 		HTTPRedirect: scheme == "https" && config.ServerHTTPRedirectEnabled(&cfg.Server),
 	})
 
-	// MCP 启用且 auth_header_value 为空时，自动生成随机密钥并写回配置
+	// Generate and persist a random key when MCP is enabled and auth_header_value is empty.
 	if err := config.EnsureMCPAuth(cp, cfg); err != nil {
 		fmt.Printf("Failed to configure MCP authentication: %v\n", err)
 		return
@@ -100,38 +100,38 @@ func main() {
 		config.PrintMCPConfigJSON(cfg.MCP)
 	}
 
-	// 初始化日志
+	// Initialize logging.
 	log := logger.New(cfg.Log.Level, cfg.Log.Output)
 
-	// 创建可取消的根 context，用于优雅关闭
+	// Create a cancellable root context for graceful shutdown.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 监听系统信号
+	// Listen for system signals.
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	// 创建应用
+	// Create the application.
 	application, err := app.New(cfg, log, cp)
 	if err != nil {
-		log.Fatal("应用初始化失败", "error", err)
+		log.Fatal("application initialization failed", "error", err)
 	}
 
-	// 在后台监听信号
+	// Listen for signals in the background.
 	go func() {
 		sig := <-sigCh
-		log.Info("收到系统信号，开始优雅关闭: " + sig.String())
+		log.Info("system signal received; starting graceful shutdown: " + sig.String())
 		application.Shutdown()
 		cancel()
 	}()
 
-	// 启动服务器（传入 context 以支持优雅关闭）
+	// Start the server with the context to support graceful shutdown.
 	if err := application.RunWithContext(ctx); err != nil {
-		// context 取消导致的关闭不视为错误
+		// Shutdown caused by context cancellation is not an error.
 		if ctx.Err() != nil {
-			log.Info("服务器已优雅关闭")
+			log.Info("server shut down gracefully")
 		} else {
-			log.Fatal("服务器启动失败", "error", err)
+			log.Fatal("server startup failed", "error", err)
 		}
 	}
 }
