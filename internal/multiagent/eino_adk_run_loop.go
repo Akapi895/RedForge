@@ -208,7 +208,7 @@ func runEinoADKAgentLoop(ctx context.Context, args *einoADKRunLoopArgs, baseMsgs
 				logger.Error("eino runner panic recovered", zap.Any("recover", r), zap.Stack("stack"))
 			}
 			if progress != nil {
-				progress("error", fmt.Sprintf("Internal error: %v / 内部错误: %v", r, r), map[string]interface{}{
+				progress("error", fmt.Sprintf("Internal error: %v", r), map[string]interface{}{
 					"conversationId": conversationID,
 					"source":         "eino",
 				})
@@ -221,7 +221,7 @@ func runEinoADKAgentLoop(ctx context.Context, args *einoADKRunLoopArgs, baseMsgs
 	emptyHint := strings.TrimSpace(args.EmptyResponseMessage)
 	if emptyHint == "" {
 		emptyHint = "(Eino session completed but no assistant text was captured. Check process details or logs.) " +
-			"（Eino 会话已完成，但未捕获到助手文本输出。请查看过程详情或日志。）"
+			"(The Eino session completed, but no assistant text was captured. Check the process details or logs.)"
 	}
 
 	if args.EinoCallbacks != nil {

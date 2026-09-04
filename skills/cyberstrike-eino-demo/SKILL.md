@@ -1,65 +1,66 @@
 ---
 name: cyberstrike-eino-demo
-description: 满配示例技能包：SKILL.md + scripts/、references/、assets/ 等可选目录；验证 Eino skill 与 HTTP 包内路径（仅授权安全测试与教学）。
+description: >-
+  Full-featured example skill package: SKILL.md + optional scripts/, references/, assets/, and other directories; validates Eino skills and HTTP package-internal paths(for authorized security testing and education only).
 ---
 
-# CyberStrike × Eino 满配技能演示
+# CyberStrike × Eino Full-Featured Skill Demo
 
-本包与 [Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) 一致：**`SKILL.md` 为清单 + 主说明**（无单独 `SKILL.yaml`）。同目录可有 **`scripts/`**、**`references/`**、**`assets/`** 等任意子目录（只要路径安全、未触达包深度/文件数上限），由 **`ListPackageFiles` / `resource_path`** 与 Eino 本机工具读取。补充说明见 `FORMS.md`、`REFERENCE.md`。
+This package follows [Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview): **`SKILL.md` is the manifest + primary instructions**(there is no separate `SKILL.yaml`). The directory may contain arbitrary subdirectories such as **`scripts/`**, **`references/`**, and **`assets/`**(provided paths are safe and package depth/file-count limits are not exceeded); they are read by **`ListPackageFiles` / `resource_path`** and Eino local tools. See `FORMS.md` and `REFERENCE.md` for supplementary details.
 
-## 概述
+## Overview
 
-用于一次性验证：
+Use this to verify in one pass:
 
-- HTTP `GET /api/skills` 列表（`script_count`、`file_count`、`progressive` 等为推导/扫描结果）
+- HTTP `GET /api/skills` listing(`script_count`, `file_count`, `progressive`, etc. are derived/scanned results)
 - `GET /api/skills/cyberstrike-eino-demo?depth=summary|full`
-- `section=` 对应 `SKILL.md` 中 **`##` 标题**或 ASCII 标题的短 id（例如 `## Payload 样例` 常对应 `section=payload`）
-- 多代理内 ADK **`skill`** 工具（及可选本机文件工具）读取包内相对路径资源
-- Eino `FilesystemSkillsRetriever` 对包摘要、`##` 分块、脚本条目的检索
+- `section=` maps to a short id for an **`##` heading** or ASCII heading in `SKILL.md`(for example, `## Payload Examples` commonly maps to `section=payload`)
+- The multi-agent ADK **`skill`** tool(and optional local file tools) reads resources by relative path inside the package
+- Eino `FilesystemSkillsRetriever` retrieves the package summary, `##` sections, and script entries
 
-**硬性要求**：任何测试须取得书面授权，并限定在约定范围与时间窗口内。
+**Hard requirement**: every test must have written authorization and remain within the agreed scope and time window.
 
-## 授权测试工作流
+## Authorized Testing Workflow
 
-1. **范围确认**：域名 / IP、接口列表、禁止动作（DoS、数据拖库等）。
-2. **基线记录**：对约定资产做只读探测，保存时间戳与原始请求/响应摘要。
-3. **分类测试**：按漏洞类型拆分任务；高风险操作前二次确认授权边界。
-4. **证据与报告**：每个发现附带复现步骤、影响、修复建议；敏感数据脱敏。
-5. **收尾**：删除临时账号、清理测试数据、移交报告。
+1. **Confirm scope**: domains/IPs, endpoint list, prohibited actions(DoS, bulk data extraction, etc.).
+2. **Record baseline**: perform read-only probes against agreed assets; save timestamps and raw request/response summaries.
+3. **Test by category**: split tasks by vulnerability type; reconfirm authorization boundaries before high-risk actions.
+4. **Evidence and reporting**: include reproduction steps, impact, and remediation for every finding; redact sensitive data.
+5. **Closeout**: delete temporary accounts, clean test data, and hand over the report.
 
-## Payload 样例
+## Payload Examples
 
-以下为 **教学占位**，实际测试需替换为目标上下文且不得用于未授权系统：
+The following are **educational placeholders**; replace them with target context during authorized testing and never use them against unauthorized systems:
 
-- SQLi 探测（错误型）：`"'`（观察是否触发数据库错误信息泄露）
-- XSS 反射型（无害化）：`<script>alert(1)</script>` → 在靶场中应被编码或 CSP 拦截
-- 路径穿越（只读验证）：`....//....//etc/passwd`（仅在授权文件读取场景）
+- SQLi probe(error-based): `"'`(observe whether database error information is disclosed)
+- Reflected XSS(sanitized): `<script>alert(1)</script>` → in a lab it should be encoded or blocked by CSP
+- Path traversal(read-only verification): `....//....//etc/passwd`(only in an authorized file-read scenario)
 
-详细列表见 `scripts/payloads.txt`。
+See `scripts/payloads.txt` for the detailed list.
 
-## references/ 与 assets/
+## references/ and assets/
 
-用于验证非 `scripts/` 的子目录是否被同等对待：
+Used to verify that non-`scripts/` subdirectories are treated equivalently:
 
-| 路径 | 用途 |
+| Path | Purpose |
 |------|------|
-| `references/citations.md` | 引用与 HTTP `resource_path` 测试说明 |
-| `assets/README.txt` | 占位资源（可换成真实二进制做读文件上限测试） |
+| `references/citations.md` | Citation and HTTP `resource_path` testing notes |
+| `assets/README.txt` | Placeholder resource(can be replaced with a real binary for file-read limit testing) |
 
-## 推荐工具链
+## Recommended Toolchain
 
-| 阶段 | 工具示例 |
+| Stage | Example tools |
 |------|-----------|
-| 代理与重放 | Burp Suite、mitmproxy |
-| 扫描与目录 | ffuf、nuclei（需调低并发遵守授权） |
-| 漏洞验证 | 自写 PoC、官方 CLI（sqlmap 等）仅在授权范围内 |
-| 记录 | Markdown + JSON 片段模板（见 `scripts/report-snippet.json`） |
+| Proxying and replay | Burp Suite, mitmproxy |
+| Scanning and directory enumeration | ffuf, nuclei(reduce concurrency to respect authorization) |
+| Vulnerability verification | Custom PoCs, official CLIs(sqlmap, etc.) only within authorized scope |
+| Recording | Markdown + JSON snippet template(see `scripts/report-snippet.json`) |
 
-## 清单与验证
+## Checklist and Verification
 
-- [ ] 已保存书面授权与测试窗口
-- [ ] `scripts/` 下文件与正文引用一致
-- [ ] Web 或 `GET /api/skills?...` 可核对索引；多代理会话内用 **`skill`** 工具按包加载以节省 token
-- [ ] 需要细节时通过 **`skill`** 拉全文，或 HTTP `depth=full`、`section=<标题或短 id>`
-- [ ] 需要脚本原文时通过本机文件工具或 HTTP `resource_path=scripts/check-env.sh`
-- [ ] `resource_path=references/citations.md` 与 `resource_path=assets/README.txt` 可读取
+- [ ] Written authorization and testing window saved
+- [ ] Files under `scripts/` match references in the main text
+- [ ] Index can be checked through Web or `GET /api/skills?...`; in multi-agent sessions, load by package with **`skill`** to save tokens
+- [ ] When details are needed, fetch the full text through **`skill`**, or use HTTP `depth=full`, `section=<heading or short id>`
+- [ ] When raw script content is needed, use local file tools or HTTP `resource_path=scripts/check-env.sh`
+- [ ] `resource_path=references/citations.md` and `resource_path=assets/README.txt` are readable

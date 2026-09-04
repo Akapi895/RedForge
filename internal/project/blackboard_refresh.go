@@ -2,17 +2,17 @@ package project
 
 import "strings"
 
-// FactIndexSectionHeading 黑板索引可读标题行前缀（块内保留，供 Agent 阅读）。
-const FactIndexSectionHeading = "## 项目黑板索引"
+// FactIndexSectionHeading is the readable heading prefix for the blackboard index (retained in the block for the Agent).
+const FactIndexSectionHeading = "## Project Blackboard Index"
 
-// FactIndexSectionStartMarker / EndMarker：HTML 注释边界，供程序化替换；对模型无指令语义。
+// FactIndexSectionStartMarker / EndMarker are HTML comment boundaries used for programmatic replacement and carry no instructional meaning for the model.
 const (
 	FactIndexSectionStartMarker = "<!-- fact-index-start -->"
 	FactIndexSectionEndMarker   = "<!-- fact-index-end -->"
 )
 
-// ReplaceFactIndexSection 用 freshIndex 替换 content 中已有的项目黑板索引段。
-// freshIndex 须为 BuildFactIndexBlock 的完整输出。起止 HTML 注释缺失时返回 (_, false)。
+// ReplaceFactIndexSection replaces the existing project-blackboard index section in content with freshIndex.
+// freshIndex must be the complete output of BuildFactIndexBlock. It returns (_, false) when either HTML boundary comment is missing.
 func ReplaceFactIndexSection(content, freshIndex string) (string, bool) {
 	freshIndex = strings.TrimSpace(freshIndex)
 	if freshIndex == "" {
@@ -29,7 +29,7 @@ func ReplaceFactIndexSection(content, freshIndex string) (string, bool) {
 	return content[:start] + freshIndex + content[end:], true
 }
 
-// wrapFactIndexBlock 为 BuildFactIndexBlock 正文加上统一起止 HTML 注释边界。
+// wrapFactIndexBlock adds consistent opening and closing HTML comment boundaries around the BuildFactIndexBlock body.
 func wrapFactIndexBlock(content string) string {
 	content = strings.TrimSpace(content)
 	return FactIndexSectionStartMarker + "\n" + content + "\n" + FactIndexSectionEndMarker + "\n"

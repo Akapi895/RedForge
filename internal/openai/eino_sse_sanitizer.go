@@ -1,26 +1,26 @@
 package openai
 
-// eino_sse_sanitizer.go 解决 Eino 走 meguminnnnnnnnn/go-openai SDK 时，
-// 中转站心跳/SSE 控制行累计 > 300 行触发 ErrTooManyEmptyStreamMessages
-// （报错文案: "stream has sent too many empty messages"）的问题。
+// eino_sse_sanitizer.go addresses ErrTooManyEmptyStreamMessages when Eino uses the meguminnnnnnnnn/go-openai SDK
+// and relay heartbeat/SSE control lines accumulate beyond 300
+// (error message: "stream has sent too many empty messages").
 //
-// 触发链路:
+// Trigger path:
 //   einoopenai.NewChatModel
 //     → eino-ext/libs/acl/openai → meguminnnnnnnnn/go-openai
-//     → streamReader.processLines() 对所有非 "data:" 行计数, > 300 即抛错。
+//     → streamReader.processLines() counts every non-"data:" line and raises an error above 300.
 //
-// 中转站常见的非 data: 行（合法 SSE 但 SDK 不接受）:
+// Common non-data lines from relays (valid SSE, but rejected by the SDK):
 //   ":" / ": keepalive" / ": ping" / "event: ping" / "retry: 3000"
-//   以及思考型模型 prefill 期间穿插的大量心跳。
+//   plus many interleaved heartbeats during reasoning-model prefill.
 //
-// 兜底策略: 在 HTTP transport 层把响应 Body 包一层 reader, 只放行 "data:"
-// 开头的行, 把心跳/注释/事件类型行就地吞掉。下游 SDK 永远见不到非 data: 行,
-// 计数器始终为 0, 该错误不可能再发生。
+// Fallback strategy: wrap the response Body with a reader at the HTTP transport layer and pass through only lines
+// beginning with "data:", discarding heartbeat, comment, and event-type lines in place. The downstream SDK never sees
+// non-data lines, so its counter remains at zero and the error cannot occur.
 //
-// 该层对调用方完全透明:
-//   - 仅当响应 Content-Type 是 text/event-stream 时介入；普通 JSON 响应原样透传
-//   - data: payload (含 [DONE] 与 {"error":...}) 一字节不改
-//   - 上游真断流 (EOF / connection reset / context cancel) 原样透传
+// This layer is completely transparent to callers:
+//   - It intervenes only when Content-Type is text/event-stream; ordinary JSON responses pass through unchanged.
+//   - data payloads (including [DONE] and {"error":...}) are byte-for-byte unchanged.
+//   - Genuine upstream termination (EOF, connection reset, or context cancellation) passes through unchanged.
 
 import (
 	"bufio"
@@ -31,12 +31,12 @@ import (
 )
 
 const (
-	// einoSSEReaderBufSize 给 bufio 一个较大的初始缓冲, 避免单行大 JSON chunk
-	// (含工具调用 arguments / reasoning_content) 频繁触发缓冲区扩容。
+	// einoSSEReaderBufSize gives bufio a larger initial buffer so large single-line JSON chunks
+	// (including tool-call arguments/reasoning_content) do not repeatedly trigger buffer growth.
 	einoSSEReaderBufSize = 64 * 1024
 )
 
-// einoSSESanitizingRoundTripper 包装下游 RoundTripper, 对 SSE 响应做行级清洗。
+// einoSSESanitizingRoundTripper wraps the downstream RoundTripper and sanitizes SSE responses line by line.
 type einoSSESanitizingRoundTripper struct {
 	base http.RoundTripper
 }
@@ -53,8 +53,8 @@ func (rt *einoSSESanitizingRoundTripper) RoundTrip(req *http.Request) (*http.Res
 	return resp, nil
 }
 
-// isSSEResponse 仅对 200 + text/event-stream 的响应做清洗;
-// 错误响应 (4xx/5xx 通常是 application/json) 不动, 由 SDK 走原错误路径。
+// isSSEResponse sanitizes only 200 + text/event-stream responses;
+// error responses (4xx/5xx, usually application/json) remain unchanged so the SDK follows its original error path.
 func isSSEResponse(resp *http.Response) bool {
 	if resp.StatusCode != http.StatusOK {
 		return false
@@ -64,16 +64,16 @@ func isSSEResponse(resp *http.Response) bool {
 		return false
 	}
 	ct = strings.ToLower(strings.TrimSpace(ct))
-	// 兼容 "text/event-stream", "text/event-stream; charset=utf-8" 等。
+	// Support "text/event-stream", "text/event-stream; charset=utf-8", and similar values.
 	return strings.HasPrefix(ct, "text/event-stream")
 }
 
-// einoSSESanitizingBody 是包装后的响应体: 只放行 data: 行, 其它行吞掉。
+// einoSSESanitizingBody is the wrapped response body: it passes through data lines and discards all others.
 type einoSSESanitizingBody struct {
 	upstream io.ReadCloser
 	reader   *bufio.Reader
-	pending  []byte // 已清洗、待返回给下游的字节 (永远以 \n 结尾的完整 data: 行)
-	err      error  // upstream 终态错误 (io.EOF 或网络错误)
+	pending  []byte // Sanitized bytes waiting to be returned downstream (always a complete data line ending in \n)
+	err      error  // Terminal upstream error (io.EOF or network error)
 }
 
 func newEinoSSESanitizingBody(body io.ReadCloser) *einoSSESanitizingBody {
@@ -93,9 +93,9 @@ func (b *einoSSESanitizingBody) Read(p []byte) (int, error) {
 		return n, nil
 	}
 
-	// 从上游读, 直到攒出一行 data: 或拿到终态。
-	// 单次循环可能丢弃任意多行心跳, 但只放行至多一行 data: 后退出,
-	// 避免一次 Read 阻塞过久 / pending 缓冲过大。
+	// Read upstream until one data line is accumulated or a terminal state is reached.
+	// One loop may discard any number of heartbeat lines, but exits after passing through at most one data line,
+	// preventing a single Read from blocking too long or making the pending buffer too large.
 	for b.err == nil {
 		line, err := b.reader.ReadBytes('\n')
 		if len(line) > 0 {
@@ -109,8 +109,8 @@ func (b *einoSSESanitizingBody) Read(p []byte) (int, error) {
 				}
 				break
 			}
-			// 非 data: 行 (空行 / ":" 注释 / event: / retry: / id: / 任何裸文本)
-			// 全部吞掉, 不向下游透出, 继续循环读下一行。
+			// Discard every non-data line (blank lines, ":" comments, event:, retry:, id:, or any bare text)
+			// without exposing it downstream, then continue reading the next line.
 		}
 		if err != nil {
 			b.err = err
@@ -130,17 +130,17 @@ func (b *einoSSESanitizingBody) Close() error {
 	return b.upstream.Close()
 }
 
-// isPassThroughSSELine 判定该行是否需要原样放行给下游 SDK。
-// 仅 "data:" (大小写不敏感, 可有任意前导空白) 开头的行需要保留。
-// 注意: 不能用 TrimSpace 去尾部换行后再判, 否则 "  data: x" 会被误判;
-// 我们只 trim 前导空白, 与 SDK 内部 TrimSpace 后再正则 ^data:\s* 的语义一致。
+// isPassThroughSSELine determines whether a line should pass through unchanged to the downstream SDK.
+// Only lines beginning with "data:" (case-insensitive, with arbitrary leading whitespace) are retained.
+// Do not use TrimSpace to remove the trailing newline before testing, or "  data: x" may be misclassified;
+// trim only leading whitespace, matching the SDK semantics of TrimSpace followed by the ^data:\s* regex.
 func isPassThroughSSELine(line []byte) bool {
 	trimmed := bytes.TrimLeft(line, " \t")
 	if len(trimmed) < 5 {
 		return false
 	}
-	// 大小写不敏感比较前 5 字节是否为 "data:"。SSE 规范要求字段名小写,
-	// 但宽松匹配可以兼容个别中转站的非规范实现。
+	// Compare the first five bytes with "data:" case-insensitively. The SSE specification requires lowercase field names,
+	// but lenient matching supports non-standard implementations used by some relays.
 	return (trimmed[0] == 'd' || trimmed[0] == 'D') &&
 		(trimmed[1] == 'a' || trimmed[1] == 'A') &&
 		(trimmed[2] == 't' || trimmed[2] == 'T') &&

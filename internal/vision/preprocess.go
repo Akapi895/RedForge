@@ -10,36 +10,36 @@ import (
 	"github.com/disintegration/imaging"
 )
 
-// ImagePayload 送入 VL API 的图片字节与 MIME。
+// ImagePayload contains image bytes and MIME type sent to the vision-language API.
 type ImagePayload struct {
 	Bytes    []byte
 	MIMEType string
 }
 
-// PreprocessMeta 记录缩放与编码结果，供工具输出与排障。
+// PreprocessMeta records resize and encoding results for tool output and troubleshooting.
 type PreprocessMeta struct {
-	OriginalPath      string
-	OriginalBytes     int64
-	OriginalWidth     int
-	OriginalHeight    int
-	OutputWidth       int
-	OutputHeight      int
-	OutputBytes       int
-	OutputMIMEType    string
-	JPEGQuality       int // 0 表示未 JPEG 重编码（原图直传）
-	PreprocessMode    string // passthrough | jpeg
+	OriginalPath   string
+	OriginalBytes  int64
+	OriginalWidth  int
+	OriginalHeight int
+	OutputWidth    int
+	OutputHeight   int
+	OutputBytes    int
+	OutputMIMEType string
+	JPEGQuality    int    // 0 means no JPEG re-encoding (the original image is sent directly)
+	PreprocessMode string // passthrough | jpeg
 }
 
-// PreprocessOptions 图片预处理参数。
+// PreprocessOptions contains image-preprocessing parameters.
 type PreprocessOptions struct {
 	MaxImageBytes            int64
 	MaxDimension             int
 	JPEGQuality              int
 	MaxPayloadBytes          int64
-	SkipPreprocessBelowBytes int64 // 0 = 始终压缩；>0 时小图+尺寸合规可直传
+	SkipPreprocessBelowBytes int64 // 0 = always compress; >0 allows small images with compliant dimensions to be sent directly
 }
 
-// PreprocessImageFile 读取图片；大图或超尺寸走 imaging 缩放+JPEG，否则可原图直传。
+// PreprocessImageFile reads an image; large or oversized images are resized with imaging and encoded as JPEG, while compliant images may be sent directly.
 func PreprocessImageFile(path string, opt PreprocessOptions) (ImagePayload, PreprocessMeta, error) {
 	var meta PreprocessMeta
 	meta.OriginalPath = path
@@ -201,7 +201,7 @@ func mimeFromImageFormat(format string) string {
 	}
 }
 
-// DecodeImageConfig 用于测试：确认文件可被解码。
+// DecodeImageConfig is used by tests to confirm that a file can be decoded.
 func DecodeImageConfig(path string) (image.Config, string, error) {
 	f, err := os.Open(path)
 	if err != nil {

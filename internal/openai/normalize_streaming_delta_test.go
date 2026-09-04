@@ -3,7 +3,7 @@ package openai
 import "testing"
 
 func TestNormalizeStreamingDelta_RepeatedCharBoundary(t *testing.T) {
-	// 流式在重复数字边界分片：不得把 "43" 的首字符与 "194" 尾字符误合并。
+	// A stream splits at a repeated-digit boundary: do not incorrectly merge the first character of "43" with the last character of "194".
 	cur, d := normalizeStreamingDelta("https://x:194", "43")
 	if want := "https://x:19443"; cur != want {
 		t.Fatalf("next: want %q got %q", want, cur)
@@ -14,26 +14,26 @@ func TestNormalizeStreamingDelta_RepeatedCharBoundary(t *testing.T) {
 }
 
 func TestNormalizeStreamingDelta_CumulativePrefix(t *testing.T) {
-	cur, d := normalizeStreamingDelta("今天", "今天天气")
-	if cur != "今天天气" || d != "天气" {
+	cur, d := normalizeStreamingDelta("\u4eca\u5929", "\u4eca\u5929\u5929\u6c14")
+	if cur != "\u4eca\u5929\u5929\u6c14" || d != "\u5929\u6c14" {
 		t.Fatalf("got cur=%q d=%q", cur, d)
 	}
 }
 
 func TestNormalizeStreamingDelta_FullRetransmit(t *testing.T) {
-	cur, d := normalizeStreamingDelta("今天", "今天")
-	if d != "" || cur != "今天" {
+	cur, d := normalizeStreamingDelta("\u4eca\u5929", "\u4eca\u5929")
+	if d != "" || cur != "\u4eca\u5929" {
 		t.Fatalf("got cur=%q d=%q", cur, d)
 	}
 }
 
 func TestNormalizeStreamingDelta_SingleRuneRepeated(t *testing.T) {
-	cur, d := normalizeStreamingDelta("呀", "呀")
-	if want := "呀呀"; cur != want {
+	cur, d := normalizeStreamingDelta("\u5440", "\u5440")
+	if want := "\u5440\u5440"; cur != want {
 		t.Fatalf("next: want %q got %q", want, cur)
 	}
-	if d != "呀" {
-		t.Fatalf("delta: want %q got %q", "呀", d)
+	if d != "\u5440" {
+		t.Fatalf("delta: want %q got %q", "\u5440", d)
 	}
 	cur, d = normalizeStreamingDelta("4", "4")
 	if want := "44"; cur != want {
@@ -45,7 +45,7 @@ func TestNormalizeStreamingDelta_SingleRuneRepeated(t *testing.T) {
 }
 
 func TestNormalizeStreamingDelta_CumulativeExtendsNumber(t *testing.T) {
-	// 已缓冲 "194" 后收到累计串 "19443"（注意 "1943" 并非 "19443" 的前缀，不能靠误写的中间态测 HasPrefix）。
+	// After buffering "194", receive the accumulated string "19443" (note that "1943" is not a prefix of "19443", so HasPrefix must not be tested with an incorrectly written intermediate state).
 	cur, d := normalizeStreamingDelta("194", "19443")
 	if want := "19443"; cur != want {
 		t.Fatalf("next: want %q got %q", want, cur)

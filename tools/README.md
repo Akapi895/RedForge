@@ -1,504 +1,520 @@
-# 工具配置文件说明
+# Tool Configuration File Guide
 
-## 概述
+## Overview
 
-每个工具都有独立的配置文件，存放在 `tools/` 目录下。这种方式使得工具配置更加清晰、易于维护和管理。系统会自动加载 `tools/` 目录下的所有 `.yaml` 和 `.yml` 文件。
+Each tool has an independent configuration file stored in the `tools/` directory. This approach makes tool configuration clearer and easier to maintain and manage. The system automatically loads all `.yaml` and `.yml` files under `tools/`.
 
-## 配置文件格式
+## Configuration File Format
 
-每个工具配置文件是一个 YAML 文件。下表列出了当前支持的顶层字段及其必填情况，建议逐项核对后再提交：
+Each tool configuration file is a YAML file. The following table lists the currently supported top-level fields and whether they are required. Check each field before submitting a configuration:
 
-| 字段 | 必填 | 类型 | 说明 |
+| Field | Required | Type | Description |
 |------|------|------|------|
-| `name` | ✅ | string | 工具唯一标识，建议使用小写字母、数字、短横线组合。 |
-| `command` | ✅ | string | 实际执行的命令或脚本名称，需位于系统 PATH 或写入绝对路径。 |
-| `enabled` | ✅ | bool | 是否注册到 MCP；设为 `false` 时该工具会被忽略。 |
-| `description` | ✅ | string | 详细描述，支持多行 Markdown，供 AI 深度理解及 `resources/read` 查询。 |
-| `short_description` | 可选 | string | 20-50 字摘要，用于工具列表、减少 token 消耗；缺失时会自动截取 `description` 开头。 |
-| `args` | 可选 | string[] | 固定参数，按顺序 prepend 到命令行，常用于定义默认扫描模式。 |
-| `parameters` | 可选 | array | 运行时可配置参数列表，详见「参数定义」章节。 |
-| `arg_mapping` | 可选 | string | 参数映射模式（`auto`/`manual`/`template`），默认 `auto`；除非有特殊需求，无需填写。 |
+| `name` | Yes | string | Unique tool identifier; a combination of lowercase letters, numbers, and hyphens is recommended. |
+| `command` | Yes | string | Command or script name to execute; it must be available on the system PATH or specified as an absolute path. |
+| `enabled` | Yes | bool | Whether to register the tool with MCP. When set to `false`, the tool is ignored. |
+| `description` | Yes | string | Detailed description supporting multi-line Markdown, used for deep AI understanding and `resources/read` queries. |
+| `short_description` | Optional | string | A 20-50 character summary used in tool lists to reduce token consumption. When omitted, the beginning of `description` is extracted automatically. |
+| `args` | Optional | string[] | Fixed arguments prepended to the command line in order, often used to define a default scanning mode. |
+| `parameters` | Optional | array | List of parameters configurable at runtime; see the "Parameter Definitions" section. |
+| `arg_mapping` | Optional | string | Argument-mapping mode (`auto`/`manual`/`template`); defaults to `auto`. Omit it unless special behavior is required. |
 
-> 若某字段填写错误或漏填必填项，系统会在加载时跳过该工具并在日志中输出警告，但不会影响其他工具。
+> If a field is invalid or a required field is missing, the system skips that tool during loading and writes a warning to the log without affecting other tools.
 
-## 工具描述
+## Tool Descriptions
 
-### 简短描述 (`short_description`)
+### Short Description (`short_description`)
 
-- **用途**：用于工具列表，减少发送给大模型的token消耗
-- **要求**：一句话（20-50字）说明工具的核心用途
-- **示例**：`"网络扫描工具，用于发现网络主机、开放端口和服务"`
+- **Purpose**: Used in tool lists to reduce the number of tokens sent to the language model
+- **Requirement**: One sentence of 20-50 characters describing the tool's primary purpose
+- **Example**: `"Network scanning tool for discovering network hosts, open ports, and services"`
 
-### 详细描述 (`description`)
+### Detailed Description (`description`)
 
-支持多行文本，应该包含：
+Multi-line text is supported and should include:
 
-1. **工具功能说明**：工具的主要功能
-2. **使用场景**：什么情况下使用这个工具
-3. **注意事项**：使用时的注意事项和警告
-4. **示例**：使用示例（可选）
+1. **Tool functionality**: The tool's primary capabilities
+2. **Use cases**: Situations in which the tool should be used
+3. **Notes**: Precautions and warnings for use
+4. **Examples**: Usage examples (optional)
 
-**重要说明**：
-- 工具列表发送给大模型时，使用 `short_description`（如果存在）
-- 如果没有 `short_description`，系统会自动从 `description` 中提取第一行或前100个字符
-- 详细描述可以通过 MCP 的 `resources/read` 接口获取（URI: `tool://tool_name`）
+**Important notes**:
 
-这样可以大幅减少token消耗，特别是当工具数量很多时（如100个工具）。
+- When the tool list is sent to the language model, `short_description` is used when present
+- If `short_description` is absent, the system automatically extracts the first line or first 100 characters from `description`
+- The detailed description can be obtained through MCP's `resources/read` endpoint (URI: `tool://tool_name`)
 
-## 参数定义
+This can substantially reduce token consumption, especially when many tools are available (for example, 100 tools).
 
-每个参数可以包含以下字段：
+## Parameter Definitions
 
-- `name`: 参数名称
-- `type`: 参数类型（string, int, bool, array）
-- `description`: 参数详细描述（支持多行）
-- `required`: 是否必需（true/false）
-- `default`: 默认值
-- `flag`: 命令行标志（如 "-u", "--url", "-p"）
-- `position`: 位置参数的位置（整数，从0开始）
-- `format`: 参数格式（"flag", "positional", "combined", "template"）
-- `template`: 模板字符串（用于 format="template"）
-- `options`: 可选值列表（用于枚举类型）
+Each parameter may contain the following fields:
 
-### 参数格式说明
+- `name`: Parameter name
+- `type`: Parameter type (string, int, bool, array)
+- `description`: Detailed parameter description (multi-line text is supported)
+- `required`: Whether the parameter is required (true/false)
+- `default`: Default value
+- `flag`: Command-line flag (such as "-u", "--url", or "-p")
+- `position`: Positional-argument position (an integer starting at 0)
+- `format`: Parameter format ("flag", "positional", "combined", or "template")
+- `template`: Template string (used when `format="template"`)
+- `options`: List of allowed values (used for enumerated types)
 
-- **`flag`**: 标志参数，格式为 `--flag value` 或 `-f value`
-  - 示例：`flag: "-u"` → `-u http://example.com`
-  
-- **`positional`**: 位置参数，按顺序添加到命令中
-  - 示例：`position: 0` → 作为第一个位置参数
-  
-- **`combined`**: 组合格式，格式为 `--flag=value`
-  - 示例：`flag: "--level"`, `format: "combined"` → `--level=3`
-  
-- **`template`**: 模板格式，使用自定义模板字符串
-  - 示例：`template: "{flag} {value}"` → 自定义格式
+### Parameter Formats
 
-### 特殊参数
+- **`flag`**: Flag argument in the form `--flag value` or `-f value`
+  - Example: `flag: "-u"` produces `-u http://example.com`
 
-#### `additional_args` 参数
+- **`positional`**: Positional argument added to the command in sequence
+  - Example: `position: 0` places it as the first positional argument
 
-`additional_args` 是一个特殊的参数，用于传递未在参数列表中定义的额外命令行选项。这个参数会被解析并按空格分割成多个参数。
+- **`combined`**: Combined form written as `--flag=value`
+  - Example: `flag: "--level"`, `format: "combined"` produces `--level=3`
 
-**使用场景：**
-- 传递工具的高级选项
-- 传递未在配置中定义的参数
-- 传递复杂的参数组合
+- **`template`**: Template form using a custom template string
+  - Example: `template: "{flag} {value}"` produces a custom format
 
-**示例：**
+### Special Parameters
+
+#### The `additional_args` Parameter
+
+`additional_args` is a special parameter used to pass extra command-line options that are not defined in the parameter list. It is parsed and split on spaces into multiple arguments.
+
+**Use cases:**
+
+- Pass advanced tool options
+- Pass arguments not defined in the configuration
+- Pass complex combinations of arguments
+
+**Example:**
+
 ```yaml
 - name: "additional_args"
   type: "string"
-  description: "额外的工具参数，多个参数用空格分隔"
+  description: "Additional tool arguments, separated by spaces"
   required: false
   format: "positional"
 ```
 
-**使用示例：**
-- `additional_args: "--script vuln -O"` → 会被解析为 `["--script", "vuln", "-O"]`
-- `additional_args: "-T4 --max-retries 3"` → 会被解析为 `["-T4", "--max-retries", "3"]`
+**Usage examples:**
 
-**注意事项：**
-- 参数会被按空格分割，但保留引号内的内容
-- 确保参数格式正确，避免命令注入风险
-- 此参数会追加到命令末尾
+- `additional_args: "--script vuln -O"` is parsed as `["--script", "vuln", "-O"]`
+- `additional_args: "-T4 --max-retries 3"` is parsed as `["-T4", "--max-retries", "3"]`
 
-#### `scan_type` 参数（特定工具）
+**Notes:**
 
-某些工具（如 `nmap`）支持 `scan_type` 参数，用于覆盖默认的扫描类型参数。
+- Arguments are split on spaces, while content inside quotation marks is preserved
+- Ensure arguments are formatted correctly to avoid command-injection risks
+- This parameter is appended to the end of the command
 
-**示例（nmap）：**
+#### The `scan_type` Parameter (Specific Tools)
+
+Some tools, such as `nmap`, support a `scan_type` parameter that overrides the default scan-type arguments.
+
+**Example (nmap):**
+
 ```yaml
 - name: "scan_type"
   type: "string"
-  description: "扫描类型选项，可以覆盖默认的扫描类型"
+  description: "Scan-type options that can override the default scan type"
   required: false
   format: "positional"
 ```
 
-**使用示例：**
-- `scan_type: "-sV -sC"` → 版本检测和脚本扫描
-- `scan_type: "-A"` → 全面扫描
+**Usage examples:**
 
-**注意事项：**
-- 如果指定了 `scan_type`，会替换工具配置中的默认扫描类型参数
-- 多个选项用空格分隔
+- `scan_type: "-sV -sC"` performs version detection and script scanning
+- `scan_type: "-A"` performs a comprehensive scan
 
-### 参数描述要求
+**Notes:**
 
-参数描述应该包含：
+- When `scan_type` is specified, it replaces the default scan-type arguments in the tool configuration
+- Separate multiple options with spaces
 
-1. **参数用途**：这个参数是做什么的
-2. **格式要求**：参数值的格式要求（如URL格式、端口范围格式等）
-3. **示例值**：具体的示例值（多个示例用列表展示）
-4. **注意事项**：使用时需要注意的事项（权限要求、性能影响、安全警告等）
+### Parameter Description Requirements
 
-**描述格式建议：**
-- 使用 Markdown 格式增强可读性
-- 使用 `**粗体**` 突出重要信息
-- 使用列表展示多个示例或选项
-- 使用代码块展示复杂格式
+A parameter description should include:
 
-**示例：**
+1. **Purpose**: What the parameter does
+2. **Format requirements**: Required value format (such as URL format or port-range format)
+3. **Example values**: Specific examples, shown as a list when there are several
+4. **Notes**: Relevant considerations such as permission requirements, performance impact, and security warnings
+
+**Recommended description format:**
+
+- Use Markdown to improve readability
+- Use `**bold**` to emphasize important information
+- Use lists for multiple examples or options
+- Use code blocks for complex formats
+
+**Example:**
+
 ```yaml
 description: |
-  目标IP地址或域名。可以是单个IP、IP范围、CIDR格式或域名。
-  
-  **示例值：**
-  - 单个IP: "192.168.1.1"
-  - IP范围: "192.168.1.1-100"
+  Target IP address or domain name. It may be a single IP, IP range, CIDR, or domain name.
+
+  **Example values:**
+  - Single IP: "192.168.1.1"
+  - IP range: "192.168.1.1-100"
   - CIDR: "192.168.1.0/24"
-  - 域名: "example.com"
-  
-  **注意事项：**
-  - 确保目标地址格式正确
-  - 必需参数，不能为空
+  - Domain name: "example.com"
+
+  **Notes:**
+  - Ensure that the target-address format is correct
+  - This parameter is required and cannot be empty
 ```
 
-## 参数类型说明
+## Parameter Types
 
-### 布尔类型 (bool)
+### Boolean Type (bool)
 
-布尔类型参数有特殊处理：
-- `true`: 只添加标志，不添加值（如 `--flag`）
-- `false`: 不添加任何参数
-- 支持多种输入格式：`true`/`false`、`1`/`0`、`"true"`/`"false"`
+Boolean parameters receive special handling:
 
-**示例：**
+- `true`: Add only the flag, without a value (for example, `--flag`)
+- `false`: Do not add any argument
+- Multiple input forms are supported: `true`/`false`, `1`/`0`, and `"true"`/`"false"`
+
+**Example:**
+
 ```yaml
 - name: "verbose"
   type: "bool"
-  description: "详细输出模式"
+  description: "Verbose output mode"
   required: false
   default: false
   flag: "-v"
   format: "flag"
 ```
 
-### 字符串类型 (string)
+### String Type (string)
 
-最常用的参数类型，支持任意字符串值。
+The most commonly used parameter type; it supports any string value.
 
-### 整数类型 (int/integer)
+### Integer Type (int/integer)
 
-用于数值参数，如端口号、级别等。
+Used for numeric parameters such as port numbers and levels.
 
-**示例：**
+**Example:**
+
 ```yaml
 - name: "level"
   type: "int"
-  description: "测试级别，范围1-5"
+  description: "Test level, from 1 to 5"
   required: false
   default: 3
   flag: "--level"
   format: "combined"  # --level=3
 ```
 
-### 数组类型 (array)
+### Array Type (array)
 
-数组会自动转换为逗号分隔的字符串。
+Arrays are automatically converted into comma-delimited strings.
 
-**示例：**
+**Example:**
+
 ```yaml
 - name: "ports"
   type: "array"
   item_type: "number"
-  description: "端口列表"
+  description: "List of ports"
   required: false
-  # 输入: [80, 443, 8080]
-  # 输出: "80,443,8080"
+  # Input: [80, 443, 8080]
+  # Output: "80,443,8080"
 ```
 
-## 示例
+## Examples
 
-参考 `tools/` 目录下的现有工具配置文件：
+Refer to the existing tool configuration files under `tools/`:
 
-- `nmap.yaml`: 网络扫描工具（包含 `scan_type` 和 `additional_args` 示例）
-- `sqlmap.yaml`: SQL注入检测工具（包含 `additional_args` 示例）
-- `nikto.yaml`: Web服务器扫描工具
-- `dirb.yaml`: Web目录扫描工具
-- `exec.yaml`: 系统命令执行工具
+- `nmap.yaml`: Network scanning tool (includes examples of `scan_type` and `additional_args`)
+- `sqlmap.yaml`: SQL injection detection tool (includes an `additional_args` example)
+- `nikto.yaml`: Web server scanning tool
+- `dirb.yaml`: Web directory scanning tool
+- `exec.yaml`: System command execution tool
 
-### 完整示例：nmap 工具配置
+### Complete Example: nmap Tool Configuration
 
 ```yaml
 name: "nmap"
 command: "nmap"
-args: ["-sT", "-sV", "-sC"]  # 默认扫描类型
+args: ["-sT", "-sV", "-sC"]  # Default scan type
 enabled: true
 
-short_description: "网络扫描工具，用于发现网络主机、开放端口和服务"
+short_description: "Network scanning tool for discovering network hosts, open ports, and services"
 
 description: |
-  网络映射和端口扫描工具，用于发现网络中的主机、服务和开放端口。
-  
-  **主要功能：**
-  - 主机发现：检测网络中的活动主机
-  - 端口扫描：识别目标主机上开放的端口
-  - 服务识别：检测运行在端口上的服务类型和版本
-  - 操作系统检测：识别目标主机的操作系统类型
-  - 漏洞检测：使用NSE脚本检测常见漏洞
+  Network mapping and port scanning tool for discovering hosts, services, and open ports on a network.
+
+  **Main features:**
+  - Host discovery: detect active hosts on the network
+  - Port scanning: identify open ports on the target host
+  - Service identification: detect the types and versions of services running on ports
+  - Operating-system detection: identify the target host's operating-system type
+  - Vulnerability detection: use NSE scripts to detect common vulnerabilities
 
 parameters:
   - name: "target"
     type: "string"
-    description: "目标IP地址或域名"
+    description: "Target IP address or domain name"
     required: true
     position: 0
     format: "positional"
-  
+
   - name: "ports"
     type: "string"
-    description: "端口范围，例如: 1-1000"
+    description: "Port range, for example: 1-1000"
     required: false
     flag: "-p"
     format: "flag"
-  
+
   - name: "scan_type"
     type: "string"
-    description: "扫描类型选项，例如: '-sV -sC'"
+    description: "Scan-type options, for example: '-sV -sC'"
     required: false
     format: "positional"
-  
+
   - name: "additional_args"
     type: "string"
-    description: "额外的Nmap参数，例如: '--script vuln -O'"
+    description: "Additional Nmap arguments, for example: '--script vuln -O'"
     required: false
     format: "positional"
 ```
 
-## 添加新工具
+## Adding a New Tool
 
-要添加新工具，只需在 `tools/` 目录下创建一个新的 YAML 文件，例如 `my_tool.yaml`：
+To add a new tool, create a YAML file such as `my_tool.yaml` under `tools/`:
 
 ```yaml
 name: "my_tool"
 command: "my-command"
-args: ["--default-arg"]  # 固定参数（可选）
+args: ["--default-arg"]  # Fixed arguments (optional)
 enabled: true
 
-# 简短描述（推荐）- 用于工具列表，减少token消耗
-short_description: "一句话说明工具用途"
+# Short description (recommended), used in the tool list to reduce token consumption
+short_description: "One-sentence description of the tool's purpose"
 
-# 详细描述 - 用于工具文档和AI理解
+# Detailed description used for tool documentation and AI understanding
 description: |
-  工具详细描述，支持多行文本和Markdown格式。
-  
-  **主要功能：**
-  - 功能1
-  - 功能2
-  
-  **使用场景：**
-  - 场景1
-  - 场景2
-  
-  **注意事项：**
-  - 使用时的注意事项
-  - 权限要求
-  - 性能影响
+  Detailed tool description supporting multi-line text and Markdown.
+
+  **Main features:**
+  - Feature 1
+  - Feature 2
+
+  **Use cases:**
+  - Scenario 1
+  - Scenario 2
+
+  **Notes:**
+  - Usage precautions
+  - Permission requirements
+  - Performance impact
 
 parameters:
   - name: "target"
     type: "string"
     description: |
-      目标参数详细描述。
-      
-      **示例值：**
+      Detailed description of the target parameter.
+
+      **Example values:**
       - "value1"
       - "value2"
-      
-      **注意事项：**
-      - 格式要求
-      - 使用限制
+
+      **Notes:**
+      - Format requirements
+      - Usage restrictions
     required: true
-    position: 0  # 位置参数
+    position: 0  # Positional argument
     format: "positional"
-  
+
   - name: "option"
     type: "string"
-    description: "选项参数描述"
+    description: "Option parameter description"
     required: false
     flag: "--option"
     format: "flag"
-  
+
   - name: "verbose"
     type: "bool"
-    description: "详细输出模式"
+    description: "Verbose output mode"
     required: false
     default: false
     flag: "-v"
     format: "flag"
-  
+
   - name: "additional_args"
     type: "string"
-    description: "额外的工具参数，多个参数用空格分隔"
+    description: "Additional tool arguments, separated by spaces"
     required: false
     format: "positional"
 ```
 
-保存文件后，重启服务即可自动加载新工具。
+After saving the file, restart the service to load the new tool automatically.
 
-### 工具配置最佳实践
+### Tool Configuration Best Practices
 
-1. **参数设计**
-   - 将常用参数单独定义，便于AI理解和使用
-   - 使用 `additional_args` 提供灵活性，支持高级用法
-   - 为参数提供清晰的描述和示例
+1. **Parameter design**
+   - Define commonly used parameters individually so that the AI can understand and use them easily
+   - Use `additional_args` for flexibility and advanced usage
+   - Provide clear descriptions and examples for parameters
 
-2. **描述优化**
-   - 使用 `short_description` 减少token消耗
-   - `description` 要详细，帮助AI理解工具用途
-   - 使用Markdown格式增强可读性
+2. **Description optimization**
+   - Use `short_description` to reduce token consumption
+   - Make `description` detailed enough to help the AI understand the tool's purpose
+   - Use Markdown to improve readability
 
-3. **默认值设置**
-   - 为常用参数设置合理的默认值
-   - 布尔类型默认值通常设为 `false`
-   - 数值类型根据工具特性设置
+3. **Default values**
+   - Set reasonable defaults for commonly used parameters
+   - Boolean defaults are usually `false`
+   - Set numeric defaults according to the tool's characteristics
 
-4. **参数验证**
-   - 在描述中明确参数格式要求
-   - 提供多个示例值
-   - 说明参数的限制和注意事项
+4. **Parameter validation**
+   - Clearly state parameter format requirements in descriptions
+   - Provide several example values
+   - Explain parameter restrictions and precautions
 
-5. **安全性**
-   - 对于危险操作，在描述中添加警告
-   - 说明权限要求
-   - 提醒仅在授权环境中使用
+5. **Security**
+   - Add warnings to descriptions for dangerous operations
+   - State permission requirements
+   - Remind users to operate only in authorized environments
 
-6. **单次执行时长与超时（最佳实践）**
-   - 若某工具经常执行很久（如超过 10～30 分钟仍显示「执行中」），属于异常长时间挂起，建议：
-     - 在 **config.yaml** 的 `agent.tool_timeout_minutes` 中设置单次工具最大执行时长（默认 10 分钟），超时后会自动终止并释放资源；
-     - 需要更长扫描时再适当调大该值（如 20、30），不建议设为 0（不限制）；
-     - 在任务监控页可对整条任务使用「停止任务」中断当前对话与后续工具调用；
-     - 工具实现上尽量支持「可中断」或内置超时（如脚本内设 timeout），以便与系统超时协同。
+6. **Single-execution duration and timeout (best practice)**
+   - If a tool frequently runs for a long time (for example, it still shows "Running" after 10-30 minutes), treat this as an abnormally long hang and consider the following:
+     - Set the maximum duration of one tool execution in `agent.tool_timeout_minutes` in **config.yaml** (default: 10 minutes). After the timeout, the process is terminated automatically and its resources are released.
+     - Increase the value appropriately for longer scans (for example, to 20 or 30). Setting it to 0 (unlimited) is not recommended.
+     - On the task-monitoring page, use "Stop Task" for the entire task to interrupt the current conversation and subsequent tool calls.
+     - Where possible, implement tools so that they can be interrupted or have a built-in timeout (for example, a timeout inside the script), allowing them to cooperate with the system timeout.
 
-## 禁用工具
+## Disabling a Tool
 
-要禁用某个工具，只需将配置文件中的 `enabled` 字段设置为 `false`，或者直接删除/重命名配置文件。
+To disable a tool, set the `enabled` field in its configuration file to `false`, or delete/rename the configuration file.
 
-禁用后，工具不会出现在工具列表中，AI也无法调用该工具。
+After a tool is disabled, it does not appear in the tool list and cannot be called by the AI.
 
-## 工具配置验证
+## Tool Configuration Validation
 
-系统在加载工具配置时会进行基本验证：
+The system performs basic validation while loading tool configurations:
 
-- ✅ 检查必需字段（`name`, `command`, `enabled`）
-- ✅ 验证参数定义格式
-- ✅ 检查参数类型是否支持
+- Check required fields (`name`, `command`, and `enabled`)
+- Validate the parameter-definition format
+- Check whether parameter types are supported
 
-如果配置有误，系统会在启动日志中显示警告信息，但不会阻止服务器启动。错误的工具配置会被跳过，其他工具仍可正常使用。
+If a configuration is invalid, the system displays a warning in the startup log but does not prevent the server from starting. The invalid tool configuration is skipped, while other tools continue to work normally.
 
-## 常见问题
+## Frequently Asked Questions
 
-### Q: 如何传递多个参数值？
+### Q: How do I pass multiple parameter values?
 
-A: 对于数组类型参数，系统会自动转换为逗号分隔的字符串。对于需要传递多个独立参数的情况，可以使用 `additional_args` 参数。
+A: For array parameters, the system automatically converts the value into a comma-delimited string. To pass several independent arguments, use `additional_args`.
 
-### Q: 如何覆盖工具的默认参数？
+### Q: How do I override a tool's default arguments?
 
-A: 某些工具（如 `nmap`）支持 `scan_type` 参数来覆盖默认的扫描类型。对于其他情况，可以使用 `additional_args` 参数。
+A: Some tools, such as `nmap`, support `scan_type` for overriding the default scan type. In other cases, use `additional_args`.
 
-### Q: 工具执行超过 30 分钟一直显示「执行中」怎么办？
+### Q: What should I do if a tool has been showing "Running" for more than 30 minutes?
 
-A: 属于异常长时间挂起，建议：
-1. 在 **config.yaml** 中配置 `agent.tool_timeout_minutes`（默认 10），单次工具超过该分钟数会自动终止；
-2. 在监控页对该任务使用「停止任务」立即中断；
-3. 若该工具确实需要更长时间，可适当增大 `tool_timeout_minutes`，但不建议设为 0。
+A: Treat this as an abnormally long hang and take the following steps:
 
-### Q: 工具执行失败怎么办？
+1. Configure `agent.tool_timeout_minutes` in **config.yaml** (default: 10); a single tool execution that exceeds this duration is terminated automatically.
+2. Use "Stop Task" for that task on the monitoring page to interrupt it immediately.
+3. If the tool genuinely requires more time, increase `tool_timeout_minutes` appropriately, but do not set it to 0.
 
-A: 检查以下几点：
-1. 工具是否已安装并在系统PATH中
-2. 工具配置是否正确
-3. 参数格式是否符合要求
-4. 查看服务器日志获取详细错误信息
+### Q: What should I do if tool execution fails?
 
-### Q: 如何测试工具配置？
+A: Check the following:
 
-A: 可以使用 `cmd/test-config/main.go` 工具测试配置加载：
+1. Whether the tool is installed and available on the system PATH
+2. Whether the tool configuration is correct
+3. Whether the argument format meets the requirements
+4. The server logs for detailed error information
+
+### Q: How do I test a tool configuration?
+
+A: Use `cmd/test-config/main.go` to test configuration loading:
+
 ```bash
 go run cmd/test-config/main.go
 ```
 
-### Q: 参数顺序如何控制？
+### Q: How is argument order controlled?
 
-A: 使用 `position` 字段控制位置参数的顺序。**位置 0 的参数（如 gobuster 的 `dir` 子命令）会紧跟在命令名后、所有标志参数之前**，以便兼容需要“子命令 + 选项”形式的 CLI。其余标志参数按在 `parameters` 列表中的顺序添加，再按 position 1、2… 添加其余位置参数。`additional_args` 会追加到命令末尾。
+A: Use the `position` field to control positional-argument order. **The argument at position 0 (such as Gobuster's `dir` subcommand) immediately follows the command name and precedes all flag arguments**, supporting CLIs that require a "subcommand + options" form. Remaining flag arguments are added in their order in the `parameters` list, followed by the remaining positional arguments in positions 1, 2, and so on. `additional_args` is appended to the end of the command.
 
-## 工具配置模板
+## Tool Configuration Templates
 
-### 基础工具模板
+### Basic Tool Template
 
 ```yaml
 name: "tool_name"
 command: "command"
 enabled: true
 
-short_description: "简短描述（20-50字）"
+short_description: "Short description (20-50 characters)"
 
 description: |
-  详细描述，说明工具的功能、使用场景和注意事项。
+  Detailed description of the tool's functionality, use cases, and precautions.
 
 parameters:
   - name: "target"
     type: "string"
-    description: "目标参数描述"
+    description: "Target parameter description"
     required: true
     position: 0
     format: "positional"
-  
+
   - name: "additional_args"
     type: "string"
-    description: "额外的工具参数"
+    description: "Additional tool arguments"
     required: false
     format: "positional"
 ```
 
-### 带标志参数的工具模板
+### Tool Template with Flag Arguments
 
 ```yaml
 name: "tool_name"
 command: "command"
 enabled: true
 
-short_description: "简短描述"
+short_description: "Short description"
 
 description: |
-  详细描述。
+  Detailed description.
 
 parameters:
   - name: "target"
     type: "string"
-    description: "目标"
+    description: "Target"
     required: true
     flag: "-t"
     format: "flag"
-  
+
   - name: "option"
     type: "bool"
-    description: "选项"
+    description: "Option"
     required: false
     default: false
     flag: "--option"
     format: "flag"
-  
+
   - name: "level"
     type: "int"
-    description: "级别"
+    description: "Level"
     required: false
     default: 3
     flag: "--level"
     format: "combined"
-  
+
   - name: "additional_args"
     type: "string"
-    description: "额外参数"
+    description: "Additional arguments"
     required: false
     format: "positional"
 ```
 
-## 相关文档
+## Related Documentation
 
-- 主项目 README: 查看 `README.md` 了解完整的项目文档
-- 工具列表: 查看 `tools/` 目录下的所有工具配置文件
-- API文档: 查看主 README 中的 API 接口说明
-
+- Main project README: see `README.md` for complete project documentation
+- Tool list: see all tool configuration files under `tools/`
+- API documentation: see the API endpoint documentation in the main README

@@ -1,23 +1,23 @@
 ---
 name: active-directory-attack
 description: >-
-  内网域攻击:BloodHound,Kerberoast,ADCS ESC1/ESC8,NTLM Relay,Coerce,DACL,DCSync,Zerologon/NoPac/PrintNightmare,mitm6,LLMNR,Linux内网。Use when attacking Active Directory, ADCS, NTLM relay, or internal domain.
+  Internal-domain attacks: BloodHound, Kerberoast, ADCS ESC1/ESC8, NTLM Relay, coercion, DACL, DCSync, Zerologon/NoPac/PrintNightmare, mitm6, LLMNR, and Linux internal networks. Use when attacking Active Directory, ADCS, NTLM relay, or an internal domain.
 metadata:
-  tags: [渗透测试, penetration-testing, 红队]
+  tags: [penetration-testing, red-team]
 ---
 
-## 内网域攻击
+## Internal-Domain Attacks
 
 ```
-=== 内网域(2023+真实主战场) ===
-侦察: BloodHound(SharpHound收集→攻击路径) | Kerberos: GetNPUsers(AS-REP)/GetUserSPNs(Kerberoast)
-🚨ADCS(Certipy一把梭): certipy find -vulnerable | ESC1指定SAN申域管证书 | ESC8 relay到CA拿DC证书
-🚨NTLM Relay(比PtH重要,PtH常被EDR拦): ntlmrelayx -t ldap--escalate-user / -t http CA --adcs(ESC8) / RBCD
-🚨强制认证Coerce: PetitPotam(MS-EFSRPC)/coercer全协议喷/printerbug → 喂给relay
-🚨DACL滥用: WriteDACL→给自己加DCSync | 影子凭据certipy shadow(GenericWrite即可,不改密码不留痕)
-DCSync: secretsdump -just-dc → krbtgt hash→Golden Ticket
-🚨一击致命域CVE(先测,命中直接域管): Zerologon(CVE-2020-1472,置空DC机器账户密码→DCSync) | NoPac(CVE-2021-42278/42287,机器账户改名申DC TGT) | PrintNightmare(CVE-2021-34527,后台打印RCE/加载恶意驱动) | EternalBlue(MS17-010,老SMBv1直RCE)
-🚨IPv6/mitm6(默认双栈内网必打): mitm6劫持DHCPv6+DNS→WPAD→ntlmrelayx到LDAP/ADCS(比LLMNR更隐蔽,现代内网首选)
-LLMNR/NBT-NS投毒: responder抓NetNTLMv2→hashcat破/relay
-Linux内网: Redis未授权(CONFIG SET dir写SSH key) | NFS showmount | Docker 2375
+=== Internal domain (the real battleground in 2023+) ===
+Reconnaissance: BloodHound (SharpHound collection → attack paths) | Kerberos: GetNPUsers (AS-REP) / GetUserSPNs (Kerberoast)
+🚨 ADCS (Certipy full workflow): certipy find -vulnerable | ESC1: request a domain-controller certificate with a specified SAN | ESC8: relay to the CA to obtain a DC certificate
+🚨 NTLM Relay (more important than PtH; PtH is often blocked by EDR): ntlmrelayx -t ldap --escalate-user / -t http CA --adcs (ESC8) / RBCD
+🚨 Coercion: PetitPotam (MS-EFSRPC) / coercer across protocols / printerbug → feed into relay
+🚨 DACL abuse: WriteDACL → grant yourself DCSync rights | Shadow credentials: certipy shadow (GenericWrite is sufficient; does not change the password or leave an obvious trace)
+DCSync: secretsdump -just-dc → krbtgt hash → Golden Ticket
+🚨 High-impact domain CVEs (test first; a hit may lead directly to domain admin): Zerologon (CVE-2020-1472, clear the DC machine-account password → DCSync) | NoPac (CVE-2021-42278/42287, rename a machine account to request a DC TGT) | PrintNightmare (CVE-2021-34527, spooler RCE / malicious-driver loading) | EternalBlue (MS17-010, direct RCE through legacy SMBv1)
+🚨 IPv6/mitm6 (mandatory in dual-stack internal networks): mitm6 hijacks DHCPv6 + DNS → WPAD → ntlmrelayx to LDAP/ADCS (stealthier than LLMNR and preferred in modern internal networks)
+LLMNR/NBT-NS poisoning: Responder captures NetNTLMv2 → crack with hashcat or relay
+Linux internal network: unauthenticated Redis (CONFIG SET dir to write an SSH key) | NFS showmount | Docker 2375
 ```

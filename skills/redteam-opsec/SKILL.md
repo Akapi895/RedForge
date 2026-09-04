@@ -1,23 +1,23 @@
 ---
 name: redteam-opsec
 description: >-
-  OPSEC隐蔽作战纪律:IP黑名单绕过,速率时序,流量混淆,最小足迹,反取证,渐进暴露。Use when maintaining stealth, bypassing IP bans, or planning covert red-team ops.
+  OPSEC covert-operation discipline: IP blacklist bypass, rate/timing control, traffic obfuscation, minimal footprint, anti-forensics, and gradual exposure. Use when maintaining stealth, bypassing IP bans, or planning covert red-team ops.
 metadata:
-  tags: [渗透测试, penetration-testing, 红队]
+  tags: [penetration-testing, red-team]
 ---
 
-## OPSEC / 隐蔽作战纪律（免杀 / 稳定 / 隐蔽）
+## OPSEC / Covert-Operation Discipline (Evasion / Stability / Stealth)
 
 ```
-核心: 打得进 ≠ 打得稳。被发现即行动归零。每个动作执行前先问"这步在防守方眼里长什么样"。
-🚨IP黑名单绕过(被ban后第一时间试): X-Forwarded-For: 随机IP (CDN信任此头时直接绕过应用层黑名单,返回code:10010/黑名单时逐个试XFF/X-Real-IP/CF-Connecting-IP/True-Client-IP)
-  验证: 正常请求返回"黑名单"+你的IP → 加XFF头后返回正常200 → 后续所有请求都带XFF
-  进阶: 每N个请求换一个XFF值(避免新IP也被ban) | 有些CDN只信任第一个XFF值,有些信最后一个
-速率与时序: 扫描限速(nuclei -rl / nmap -T2 --max-rate / ffuf -p延迟)避开WAF封禁+IDS阈值告警 | 高危动作低频+随机jitter | 避业务高峰也避深夜(贴合目标作息最不显眼)
-流量混淆: 贴正常业务(常见UA/Referer/合法路径) | 重武器前先探防御(进程列表/已知EDR/SIEM agent特征) → 有则静默手法优先,无监控才上自动化批量
-最小足迹: 内存执行优先不落盘(DDexec/memfd/反射加载) | webshell强口令+非常见路径+功能伪装 | 隧道走443/DNS贴常见出站 | 工具用完即删(/dev/shm内存盘,不留残骸)
-反取证: 命令历史 unset HISTFILE / set +o history | 日志选择性删自己条目(truncate全清反而触发告警) | 时间戳 touch -r参照邻近文件保persist mtime | 别动监控/审计服务(停了就是告警)
-渐进暴露: 被动侦察(证书透明/被动DNS/搜索引擎/资产引擎)→确认无强监控→才主动扫描→最后才上利用落地。能公开情报拿到的绝不主动碰目标。每升一级问"值不值得暴露"。
-> 隐蔽不是洁癖,是红队的生存能力。一次莽撞的全端口全速扫描就可能让整个行动归零。
+Core principle: gaining access ≠ operating safely. Discovery resets the operation to zero. Before every action, ask "what does this look like to the defender?"
+🚨IP blacklist bypass(try immediately after a ban): X-Forwarded-For: random IP (when the CDN trusts this header, bypass the application-layer blacklist directly; when receiving code:10010/blacklist, try XFF/X-Real-IP/CF-Connecting-IP/True-Client-IP one by one)
+  Verify: a normal request returns "blacklisted" + your IP → add the XFF header and receive a normal 200 → include XFF in all subsequent requests
+  Advanced: change the XFF value every N requests(to avoid the new IP being banned too) | some CDNs trust only the first XFF value, others trust the last
+Rate and timing: rate-limit scans(nuclei -rl / nmap -T2 --max-rate / ffuf -p delay) to avoid WAF bans + IDS threshold alerts | keep high-risk actions low-frequency with random jitter | avoid both business peaks and late night to match the target's routine
+Traffic obfuscation: blend into normal business traffic(common UA/Referer/legitimate paths) | probe defenses first(process list/known EDR/SIEM agent indicators) before heavy tooling → prefer quiet techniques when monitoring exists; use automated batches only without monitoring
+Minimal footprint: prefer in-memory execution without writing to disk(DDexec/memfd/reflective loading) | webshell strong password+unusual path+disguised functionality | route tunnels over 443/DNS like common outbound traffic | delete tools immediately after use(/dev/shm ramdisk, leave no remnants)
+Anti-forensics: command history unset HISTFILE / set +o history | selectively delete only your log entries(truncating everything triggers alerts) | touch -r using a neighboring file as reference to preserve mtime | do not touch monitoring/audit services(stopping them is itself an alert)
+Gradual exposure: passive reconnaissance(certificate transparency/passive DNS/search engines/asset engines)→confirm no strong monitoring→active scanning→only then deploy an exploit. Never actively touch the target when public intelligence can provide the answer. At every escalation ask "is exposure worth it?"
+> Stealth is not perfectionism; it is a red team's survival skill. One reckless full-port, full-speed scan can zero out the entire operation.
 ```
 
