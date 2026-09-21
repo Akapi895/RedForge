@@ -2,22 +2,22 @@ package project
 
 import "cyberstrike-ai/internal/projectprompt"
 
-// FactRecordingIncrementalRhythmMarkdown 见 projectprompt。
+// FactRecordingIncrementalRhythmMarkdown is documented in projectprompt.
 func FactRecordingIncrementalRhythmMarkdown(coordinator, subAgent bool) string {
 	return projectprompt.FactRecordingIncrementalRhythmMarkdown(coordinator, subAgent)
 }
 
-// FactRecordingBlackboardSection 见 projectprompt。
+// FactRecordingBlackboardSection is documented in projectprompt.
 func FactRecordingBlackboardSection(coordinatorDelegate bool) string {
 	return projectprompt.FactRecordingBlackboardSection(coordinatorDelegate)
 }
 
-// FactRecordingSubAgentSection 见 projectprompt。
+// FactRecordingSubAgentSection is documented in projectprompt.
 func FactRecordingSubAgentSection() string {
 	return projectprompt.FactRecordingSubAgentSection()
 }
 
-// FactRecordingBlackboardSectionMarkdown 见 projectprompt。
+// FactRecordingBlackboardSectionMarkdown is documented in projectprompt.
 func FactRecordingBlackboardSectionMarkdown(coordinatorDelegate bool) string {
 	return projectprompt.FactRecordingBlackboardSectionMarkdown(coordinatorDelegate)
 }

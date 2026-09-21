@@ -1,10 +1,10 @@
 package openai
 
-// SSEAccumulatedKey 为 SSE progress 事件 data 中的服务端权威流式全文快照字段。
-// 前端应优先用该字段更新 buffer，避免对 delta 二次 normalize 导致叠字。
+// SSEAccumulatedKey is the server-authoritative full streaming snapshot field in SSE progress-event data.
+// The frontend should prefer this field when updating its buffer to avoid duplicated characters from normalizing a delta twice.
 const SSEAccumulatedKey = "accumulated"
 
-// WithSSEAccumulated 在 progress data 中附带当前流式累计全文（权威快照）。
+// WithSSEAccumulated adds the current accumulated streaming text (authoritative snapshot) to progress data.
 func WithSSEAccumulated(data map[string]interface{}, accumulated string) map[string]interface{} {
 	if data == nil {
 		data = make(map[string]interface{}, 1)
@@ -13,8 +13,8 @@ func WithSSEAccumulated(data map[string]interface{}, accumulated string) map[str
 	return data
 }
 
-// NormalizeStreamingDelta 将可能是“累计片段/重发片段”的内容归一化为“纯增量”。
-// 与 unexported normalizeStreamingDelta 相同，供 agent / multiagent 等包在发 SSE 前累计正文。
+// NormalizeStreamingDelta normalizes content that may be an accumulated or retransmitted fragment into a pure delta.
+// It matches the unexported normalizeStreamingDelta and is used by agent, multiagent, and similar packages to accumulate body text before sending SSE.
 func NormalizeStreamingDelta(current, incoming string) (next, delta string) {
 	return normalizeStreamingDelta(current, incoming)
 }

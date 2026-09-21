@@ -1,4 +1,4 @@
-// Package agents 从 agents/ 目录加载 Markdown 代理定义（子代理 + 可选主代理 orchestrator.md / kind: orchestrator）。
+// Package agents loads Markdown agent definitions from the agents/ directory (sub-agents plus an optional main agent defined by orchestrator.md or kind: orchestrator).
 package agents
 
 import (
@@ -14,45 +14,45 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// OrchestratorMarkdownFilename 固定文件名：存在则视为 Deep 主代理定义，且不参与子代理列表。
+// OrchestratorMarkdownFilename is a fixed filename; when present, it defines the Deep main agent and is excluded from the sub-agent list.
 const OrchestratorMarkdownFilename = "orchestrator.md"
 
-// OrchestratorPlanExecuteMarkdownFilename plan_execute 模式主代理（规划侧）专用 Markdown 文件名。
+// OrchestratorPlanExecuteMarkdownFilename is the dedicated Markdown filename for the planning-side main agent in plan_execute mode.
 const OrchestratorPlanExecuteMarkdownFilename = "orchestrator-plan-execute.md"
 
-// OrchestratorSupervisorMarkdownFilename supervisor 模式主代理专用 Markdown 文件名。
+// OrchestratorSupervisorMarkdownFilename is the dedicated Markdown filename for the main agent in supervisor mode.
 const OrchestratorSupervisorMarkdownFilename = "orchestrator-supervisor.md"
 
-// FrontMatter 对应 Markdown 文件头部字段（与文档示例一致）。
+// FrontMatter corresponds to the fields in a Markdown file header (matching the documentation examples).
 type FrontMatter struct {
 	Name          string      `yaml:"name"`
 	ID            string      `yaml:"id"`
 	Description   string      `yaml:"description"`
-	Tools         interface{} `yaml:"tools"` // 字符串 "A, B" 或 []string
+	Tools         interface{} `yaml:"tools"` // String "A, B" or []string
 	MaxIterations int         `yaml:"max_iterations"`
 	BindRole      string      `yaml:"bind_role,omitempty"`
-	Kind          string      `yaml:"kind,omitempty"` // orchestrator = 主代理（亦可仅用文件名 orchestrator.md）
+	Kind          string      `yaml:"kind,omitempty"` // orchestrator = main agent (the orchestrator.md filename alone can also be used)
 }
 
-// OrchestratorMarkdown 从 agents 目录解析出的主代理（Deep 协调者）定义。
+// OrchestratorMarkdown is a main-agent (Deep coordinator) definition parsed from the agents directory.
 type OrchestratorMarkdown struct {
 	Filename    string
-	EinoName    string // 写入 deep.Config.Name / 流式事件过滤
+	EinoName    string // Written to deep.Config.Name / streaming-event filtering
 	DisplayName string
 	Description string
 	Instruction string
 }
 
-// MarkdownDirLoad 一次扫描 agents 目录的结果（子代理不含主代理文件）。
+// MarkdownDirLoad is the result of one scan of the agents directory (the sub-agent list excludes main-agent files).
 type MarkdownDirLoad struct {
 	SubAgents               []config.MultiAgentSubConfig
-	Orchestrator            *OrchestratorMarkdown // Deep 主代理
-	OrchestratorPlanExecute *OrchestratorMarkdown // plan_execute 规划主代理
-	OrchestratorSupervisor  *OrchestratorMarkdown // supervisor 监督主代理
-	FileEntries             []FileAgent           // 含主代理与所有子代理，供管理 API 列表
+	Orchestrator            *OrchestratorMarkdown // Deep main agent
+	OrchestratorPlanExecute *OrchestratorMarkdown // plan_execute planning main agent
+	OrchestratorSupervisor  *OrchestratorMarkdown // supervisor main agent
+	FileEntries             []FileAgent           // Includes main agents and all sub-agents for the management API list
 }
 
-// OrchestratorMarkdownKind 按固定文件名返回主代理类型：deep、plan_execute、supervisor；否则返回空。
+// OrchestratorMarkdownKind returns the main-agent type by fixed filename: deep, plan_execute, or supervisor; otherwise it returns an empty string.
 func OrchestratorMarkdownKind(filename string) string {
 	base := filepath.Base(strings.TrimSpace(filename))
 	switch {
@@ -67,7 +67,7 @@ func OrchestratorMarkdownKind(filename string) string {
 	}
 }
 
-// IsOrchestratorMarkdown 判断该文件是否占用 **Deep** 主代理槽位：orchestrator.md、或 kind: orchestrator（不含 plan_execute / supervisor 专用文件名）。
+// IsOrchestratorMarkdown reports whether a file occupies the **Deep** main-agent slot: orchestrator.md or kind: orchestrator (excluding dedicated plan_execute/supervisor filenames).
 func IsOrchestratorMarkdown(filename string, fm FrontMatter) bool {
 	base := filepath.Base(strings.TrimSpace(filename))
 	switch OrchestratorMarkdownKind(base) {
@@ -80,7 +80,7 @@ func IsOrchestratorMarkdown(filename string, fm FrontMatter) bool {
 	return strings.EqualFold(strings.TrimSpace(fm.Kind), "orchestrator")
 }
 
-// IsOrchestratorLikeMarkdown 是否应在前端/API 中显示为「主代理类」文件。
+// IsOrchestratorLikeMarkdown reports whether a file should be displayed as a main-agent-type file in the frontend/API.
 func IsOrchestratorLikeMarkdown(filename string, kind string) bool {
 	if OrchestratorMarkdownKind(filename) != "" {
 		return true
@@ -88,7 +88,7 @@ func IsOrchestratorLikeMarkdown(filename string, kind string) bool {
 	return IsOrchestratorMarkdown(filename, FrontMatter{Kind: kind})
 }
 
-// WantsMarkdownOrchestrator 保存前判断是否会把该文件作为主代理（用于唯一性校验）。
+// WantsMarkdownOrchestrator reports, before saving, whether a file would be treated as a main agent (used for uniqueness validation).
 func WantsMarkdownOrchestrator(filename string, kindField string, raw string) bool {
 	base := filepath.Base(strings.TrimSpace(filename))
 	if OrchestratorMarkdownKind(base) != "" {
@@ -110,7 +110,7 @@ func WantsMarkdownOrchestrator(filename string, kindField string, raw string) bo
 	return strings.EqualFold(strings.TrimSpace(sub.Kind), "orchestrator")
 }
 
-// SplitFrontMatter 分离 YAML front matter 与正文（--- ... ---）。
+// SplitFrontMatter separates YAML front matter from the body (--- ... ---).
 func SplitFrontMatter(content string) (frontYAML string, body string, err error) {
 	s := strings.TrimSpace(content)
 	if !strings.HasPrefix(s, "---") {
@@ -120,7 +120,7 @@ func SplitFrontMatter(content string) (frontYAML string, body string, err error)
 	rest = strings.TrimLeft(rest, "\r\n")
 	end := strings.Index(rest, "\n---")
 	if end < 0 {
-		return "", "", fmt.Errorf("agents: 缺少结束的 --- 分隔符")
+		return "", "", fmt.Errorf("agents: missing closing --- delimiter")
 	}
 	fm := strings.TrimSpace(rest[:end])
 	body = strings.TrimSpace(rest[end+4:])
@@ -174,7 +174,7 @@ func splitToolList(s string) []string {
 	return out
 }
 
-// SlugID 从 name 生成可用的代理 id（小写、连字符）。
+// SlugID generates a usable agent ID from name (lowercase and hyphenated).
 func SlugID(name string) string {
 	var b strings.Builder
 	name = strings.TrimSpace(strings.ToLower(name))
@@ -198,7 +198,7 @@ func SlugID(name string) string {
 	return s
 }
 
-// sanitizeEinoAgentID 规范化 Deep 主代理在 Eino 中的 Name：小写 ASCII、数字、连字符，与默认 cyberstrike-deep 一致。
+// sanitizeEinoAgentID normalizes the Deep main agent's Name in Eino to lowercase ASCII letters, numbers, and hyphens, matching the default cyberstrike-deep.
 func sanitizeEinoAgentID(s string) string {
 	s = strings.TrimSpace(strings.ToLower(s))
 	var b strings.Builder
@@ -224,10 +224,10 @@ func parseMarkdownAgentRaw(filename string, content string) (FrontMatter, string
 		return fm, "", err
 	}
 	if strings.TrimSpace(fmStr) == "" {
-		return fm, "", fmt.Errorf("agents: %s 无 YAML front matter", filename)
+		return fm, "", fmt.Errorf("agents: %s has no YAML front matter", filename)
 	}
 	if err := yaml.Unmarshal([]byte(fmStr), &fm); err != nil {
-		return fm, "", fmt.Errorf("agents: 解析 front matter: %w", err)
+		return fm, "", fmt.Errorf("agents: parse front matter: %w", err)
 	}
 	return fm, body, nil
 }
@@ -268,7 +268,7 @@ func subAgentFromFrontMatter(filename string, fm FrontMatter, body string) (conf
 	var out config.MultiAgentSubConfig
 	name := strings.TrimSpace(fm.Name)
 	if name == "" {
-		return out, fmt.Errorf("agents: %s 缺少 name 字段", filename)
+		return out, fmt.Errorf("agents: %s is missing the name field", filename)
 	}
 	id := strings.TrimSpace(fm.ID)
 	if id == "" {
@@ -297,7 +297,7 @@ func collectMarkdownBasenames(dir string) ([]string, error) {
 		return nil, err
 	}
 	if !st.IsDir() {
-		return nil, fmt.Errorf("agents: 不是目录: %s", dir)
+		return nil, fmt.Errorf("agents: not a directory: %s", dir)
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -324,7 +324,7 @@ func collectMarkdownBasenames(dir string) ([]string, error) {
 	return names, nil
 }
 
-// LoadMarkdownAgentsDir 扫描 agents 目录：拆出 Deep / plan_execute / supervisor 主代理各至多一个，及其余子代理。
+// LoadMarkdownAgentsDir scans the agents directory, separating at most one main agent for each of Deep, plan_execute, and supervisor, plus the remaining sub-agents.
 func LoadMarkdownAgentsDir(dir string) (*MarkdownDirLoad, error) {
 	out := &MarkdownDirLoad{}
 	names, err := collectMarkdownBasenames(dir)
@@ -344,7 +344,7 @@ func LoadMarkdownAgentsDir(dir string) (*MarkdownDirLoad, error) {
 		switch OrchestratorMarkdownKind(n) {
 		case "plan_execute":
 			if out.OrchestratorPlanExecute != nil {
-				return nil, fmt.Errorf("agents: 仅能定义一个 %s，已有 %s", OrchestratorPlanExecuteMarkdownFilename, out.OrchestratorPlanExecute.Filename)
+				return nil, fmt.Errorf("agents: only one %s may be defined; %s already exists", OrchestratorPlanExecuteMarkdownFilename, out.OrchestratorPlanExecute.Filename)
 			}
 			orch, err := orchestratorFromParsed(n, fm, body)
 			if err != nil {
@@ -359,7 +359,7 @@ func LoadMarkdownAgentsDir(dir string) (*MarkdownDirLoad, error) {
 			continue
 		case "supervisor":
 			if out.OrchestratorSupervisor != nil {
-				return nil, fmt.Errorf("agents: 仅能定义一个 %s，已有 %s", OrchestratorSupervisorMarkdownFilename, out.OrchestratorSupervisor.Filename)
+				return nil, fmt.Errorf("agents: only one %s may be defined; %s already exists", OrchestratorSupervisorMarkdownFilename, out.OrchestratorSupervisor.Filename)
 			}
 			orch, err := orchestratorFromParsed(n, fm, body)
 			if err != nil {
@@ -375,7 +375,7 @@ func LoadMarkdownAgentsDir(dir string) (*MarkdownDirLoad, error) {
 		}
 		if IsOrchestratorMarkdown(n, fm) {
 			if out.Orchestrator != nil {
-				return nil, fmt.Errorf("agents: 仅能定义一个主代理（Deep 协调者），已有 %s，又与 %s 冲突", out.Orchestrator.Filename, n)
+				return nil, fmt.Errorf("agents: only one main agent (Deep coordinator) may be defined; existing %s conflicts with %s", out.Orchestrator.Filename, n)
 			}
 			orch, err := orchestratorFromParsed(n, fm, body)
 			if err != nil {
@@ -399,7 +399,7 @@ func LoadMarkdownAgentsDir(dir string) (*MarkdownDirLoad, error) {
 	return out, nil
 }
 
-// ParseMarkdownSubAgent 将单个 Markdown 文件解析为 MultiAgentSubConfig。
+// ParseMarkdownSubAgent parses a single Markdown file into MultiAgentSubConfig.
 func ParseMarkdownSubAgent(filename string, content string) (config.MultiAgentSubConfig, error) {
 	fm, body, err := parseMarkdownAgentRaw(filename, content)
 	if err != nil {
@@ -422,7 +422,7 @@ func ParseMarkdownSubAgent(filename string, content string) (config.MultiAgentSu
 	return subAgentFromFrontMatter(filename, fm, body)
 }
 
-// LoadMarkdownSubAgents 读取目录下所有子代理 .md（不含主代理 orchestrator.md / kind: orchestrator）。
+// LoadMarkdownSubAgents reads all sub-agent .md files in a directory (excluding the main agent defined by orchestrator.md or kind: orchestrator).
 func LoadMarkdownSubAgents(dir string) ([]config.MultiAgentSubConfig, error) {
 	load, err := LoadMarkdownAgentsDir(dir)
 	if err != nil {
@@ -431,14 +431,14 @@ func LoadMarkdownSubAgents(dir string) ([]config.MultiAgentSubConfig, error) {
 	return load.SubAgents, nil
 }
 
-// FileAgent 单个 Markdown 文件及其解析结果。
+// FileAgent represents one Markdown file and its parsed result.
 type FileAgent struct {
 	Filename       string
 	Config         config.MultiAgentSubConfig
 	IsOrchestrator bool
 }
 
-// LoadMarkdownAgentFiles 列出目录下全部 .md（含主代理），供管理 API 使用。
+// LoadMarkdownAgentFiles lists all .md files in a directory, including main agents, for use by the management API.
 func LoadMarkdownAgentFiles(dir string) ([]FileAgent, error) {
 	load, err := LoadMarkdownAgentsDir(dir)
 	if err != nil {
@@ -447,7 +447,7 @@ func LoadMarkdownAgentFiles(dir string) ([]FileAgent, error) {
 	return load.FileEntries, nil
 }
 
-// MergeYAMLAndMarkdown 合并 config.yaml 中的 sub_agents 与 Markdown 定义：同 id 时 Markdown 覆盖 YAML；仅存在于 Markdown 的条目追加在 YAML 顺序之后。
+// MergeYAMLAndMarkdown merges sub_agents from config.yaml with Markdown definitions: Markdown overrides YAML for matching IDs, and Markdown-only entries are appended after the YAML order.
 func MergeYAMLAndMarkdown(yamlSubs []config.MultiAgentSubConfig, mdSubs []config.MultiAgentSubConfig) []config.MultiAgentSubConfig {
 	mdByID := make(map[string]config.MultiAgentSubConfig)
 	for _, m := range mdSubs {
@@ -483,7 +483,7 @@ func MergeYAMLAndMarkdown(yamlSubs []config.MultiAgentSubConfig, mdSubs []config
 	return out
 }
 
-// EffectiveSubAgents 供多代理运行时使用。
+// EffectiveSubAgents is used by the multi-agent runtime.
 func EffectiveSubAgents(yamlSubs []config.MultiAgentSubConfig, agentsDir string) ([]config.MultiAgentSubConfig, error) {
 	md, err := LoadMarkdownSubAgents(agentsDir)
 	if err != nil {
@@ -495,7 +495,7 @@ func EffectiveSubAgents(yamlSubs []config.MultiAgentSubConfig, agentsDir string)
 	return MergeYAMLAndMarkdown(yamlSubs, md), nil
 }
 
-// BuildMarkdownFile 根据配置序列化为可写回磁盘的 Markdown。
+// BuildMarkdownFile serializes a configuration into Markdown that can be written back to disk.
 func BuildMarkdownFile(sub config.MultiAgentSubConfig) ([]byte, error) {
 	fm := FrontMatter{
 		Name:          sub.Name,

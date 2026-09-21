@@ -191,7 +191,7 @@ func RunDeepAgent(
 			}
 			instr := strings.TrimSpace(sub.Instruction)
 			if instr == "" {
-				instr = "你是 CyberStrikeAI 中的专业子代理，在授权渗透测试场景下协助完成用户委托的子任务。优先使用可用工具获取证据，回答简洁专业。"
+				instr = "You are a CyberStrikeAI specialist sub-agent assisting with an authorized security-testing task. Use available tools to obtain evidence first, and respond concisely and professionally in English."
 			}
 
 			roleTools := sub.RoleTools
@@ -355,7 +355,7 @@ func RunDeepAgent(
 			sb.WriteString(supInstr)
 			sb.WriteString("\n\n")
 		}
-		sb.WriteString("你是监督协调者：可将任务通过 transfer 工具委派给下列专家子代理（使用其在系统中的 Agent 名称）。专家列表：")
+		sb.WriteString("You are the supervising coordinator. You may delegate tasks with the transfer tool to the specialist sub-agents below, using their Agent names. Specialist list:")
 		for _, sa := range subAgents {
 			if sa == nil {
 				continue
@@ -363,8 +363,8 @@ func RunDeepAgent(
 			sb.WriteString("\n- ")
 			sb.WriteString(sa.Name(ctx))
 		}
-		sb.WriteString("\n\nSupervisor 是专家路由模式：仅当任务确实需要不同专家分工时才 transfer；简单查询、单步工具调用或无需专业分流的任务由你直接完成。避免在同一子代理之间反复 transfer；除非有新的、具体的补充目标。专家返回后，你必须自行汇总、裁剪、校验证据，再用 exit 交付最终答案。")
-		sb.WriteString("\n\n当你已完成用户目标或需要将最终结论交付用户时，使用 exit 工具结束。")
+		sb.WriteString("\n\nSupervisor mode is for expert routing: transfer only when the task genuinely benefits from different specialists. Handle simple queries, single-step tool calls, and tasks requiring no specialist split yourself. Do not repeatedly transfer to the same sub-agent unless there is a new, concrete objective. After a specialist returns, independently consolidate, trim, and validate the evidence, then use exit to deliver the final answer in English.")
+		sb.WriteString("\n\nWhen the user's objective is complete or the final conclusion is ready to deliver, use the exit tool to finish.")
 		supInstr = sb.String()
 	}
 
@@ -642,7 +642,7 @@ func RunDeepAgent(
 		ModelName:               appCfg.OpenAI.Model,
 		MiddlewareConfig:        &ma.EinoMiddleware,
 		EmptyResponseMessage: "(Eino multi-agent orchestration completed but no assistant text was captured. Check process details or logs.) " +
-			"（Eino 多代理编排已完成，但未捕获到助手文本输出。请查看过程详情或日志。）",
+			"(The Eino multi-agent run completed, but no assistant text was captured. Check the process details or logs.)",
 	}, baseMsgs)
 }
 
@@ -992,7 +992,7 @@ func emitToolCallsFromMessage(
 	if isSubToolRound {
 		role = "sub"
 	}
-	progress("tool_calls_detected", fmt.Sprintf("检测到 %d 个工具调用", len(visibleToolCalls)), map[string]interface{}{
+	progress("tool_calls_detected", fmt.Sprintf("Detected %d tool call(s)", len(visibleToolCalls)), map[string]interface{}{
 		"count":          len(visibleToolCalls),
 		"conversationId": conversationID,
 		"source":         "eino",
@@ -1030,7 +1030,7 @@ func emitToolCallsFromMessage(
 				EinoRole:   role,
 			})
 		}
-		progress("tool_call", fmt.Sprintf("正在调用工具: %s", display), map[string]interface{}{
+		progress("tool_call", fmt.Sprintf("Calling tool: %s", display), map[string]interface{}{
 			"toolName":       display,
 			"arguments":      argStr,
 			"argumentsObj":   argsObj,

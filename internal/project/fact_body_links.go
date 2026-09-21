@@ -9,13 +9,14 @@ import (
 )
 
 var (
-	bodyDepFactLine   = regexp.MustCompile(`(?im)^[\s\-*]*依赖事实\s*[:：]\s*([a-zA-Z0-9][a-zA-Z0-9._/-]*)`)
-	bodyRelFactLine   = regexp.MustCompile(`(?im)^[\s\-*]*相关\s*fact_key\s*[:：]\s*([a-zA-Z0-9][a-zA-Z0-9._/-]*)`)
-	bodyAssocSection  = regexp.MustCompile(`(?im)^##\s*关联\s*$`)
-	bodySyncLinksHead = "结构化关系边（自动同步）"
+	bodyDepFactLine         = regexp.MustCompile(`(?im)^[\s\-*]*(?:dependency\s+fact|\x{4f9d}\x{8d56}\x{4e8b}\x{5b9e})\s*[:\x{ff1a}]\s*([a-zA-Z0-9][a-zA-Z0-9._/-]*)`)
+	bodyRelFactLine         = regexp.MustCompile(`(?im)^[\s\-*]*(?:related|\x{76f8}\x{5173})\s*fact_key\s*[:\x{ff1a}]\s*([a-zA-Z0-9][a-zA-Z0-9._/-]*)`)
+	bodyAssocSection        = regexp.MustCompile(`(?im)^##\s*(?:relationships?|\x{5173}\x{8054})\s*$`)
+	bodySyncLinksHead       = "Structured relationship edges (automatically synchronized)"
+	bodyLegacySyncLinksHead = "\u7ed3\u6784\u5316\u5173\u7cfb\u8fb9\uff08\u81ea\u52a8\u540c\u6b65\uff09"
 )
 
-// ParseLinksFromBody 从 body「关联」段落解析 from 语义的关系边（无显式 links 时的兜底）。
+// ParseLinksFromBody parses relationship edges with from semantics from the body's Relationships section (a fallback when links are not explicit).
 func ParseLinksFromBody(body string) []database.ProjectFactEdgeFromInput {
 	body = strings.TrimSpace(body)
 	if body == "" {
@@ -48,7 +49,7 @@ func ParseLinksFromBody(body string) []database.ProjectFactEdgeFromInput {
 			add(m[1], "supports")
 		}
 	}
-	// 自动同步块：type: key
+	// Automatically synchronized block: type: key
 	syncBlock := extractBodySyncLinksBlock(body)
 	for _, line := range strings.Split(syncBlock, "\n") {
 		line = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "-"))
@@ -84,10 +85,10 @@ func extractBodySyncLinksBlock(body string) string {
 			inSync = false
 			continue
 		}
-		if inAssoc && strings.HasPrefix(trim, "## ") && !strings.HasPrefix(trim, "## 关联") {
+		if inAssoc && strings.HasPrefix(trim, "## ") && !bodyAssocSection.MatchString(trim) {
 			break
 		}
-		if inAssoc && strings.Contains(trim, bodySyncLinksHead) {
+		if inAssoc && (strings.Contains(trim, bodySyncLinksHead) || strings.Contains(trim, bodyLegacySyncLinksHead)) {
 			inSync = true
 			continue
 		}
@@ -105,7 +106,7 @@ func extractBodySyncLinksBlock(body string) string {
 	return b.String()
 }
 
-// SyncBodyLinksSection 将入边镜像写入 body 的「关联」段（人读用；结构化以 links 为准）。
+// SyncBodyLinksSection mirrors incoming edges into the body's Relationships section for human readers; links remain the structured source of truth.
 func SyncBodyLinksSection(body string, edges []*database.ProjectFactEdge) string {
 	body = strings.TrimSpace(body)
 	block := formatBodySyncLinksBlock(edges)
@@ -113,7 +114,7 @@ func SyncBodyLinksSection(body string, edges []*database.ProjectFactEdge) string
 		return body
 	}
 	if body == "" {
-		return "## 关联\n" + block
+		return "## Relationships\n" + block
 	}
 	lines := strings.Split(body, "\n")
 	var out []string
@@ -124,17 +125,17 @@ func SyncBodyLinksSection(body string, edges []*database.ProjectFactEdge) string
 		if bodyAssocSection.MatchString(trim) {
 			inAssoc = true
 			out = append(out, lines[i])
-			// 跳过旧同步块
+			// Skip the previous synchronized block
 			j := i + 1
 			for j < len(lines) {
 				t := strings.TrimSpace(lines[j])
 				if strings.HasPrefix(t, "## ") {
 					break
 				}
-				if strings.Contains(t, bodySyncLinksHead) {
+				if strings.Contains(t, bodySyncLinksHead) || strings.Contains(t, bodyLegacySyncLinksHead) {
 					for j < len(lines) {
 						t2 := strings.TrimSpace(lines[j])
-						if t2 != "" && !strings.HasPrefix(t2, "-") && !strings.Contains(t2, ":") && !strings.Contains(t2, bodySyncLinksHead) {
+						if t2 != "" && !strings.HasPrefix(t2, "-") && !strings.Contains(t2, ":") && !strings.Contains(t2, bodySyncLinksHead) && !strings.Contains(t2, bodyLegacySyncLinksHead) {
 							if strings.HasPrefix(t2, "##") {
 								break
 							}
@@ -163,7 +164,7 @@ func SyncBodyLinksSection(body string, edges []*database.ProjectFactEdge) string
 	}
 	if !replaced {
 		if !inAssoc {
-			out = append(out, "", "## 关联", block)
+			out = append(out, "", "## Relationships", block)
 		} else {
 			out = append(out, block)
 		}
@@ -173,7 +174,7 @@ func SyncBodyLinksSection(body string, edges []*database.ProjectFactEdge) string
 
 func formatBodySyncLinksBlock(edges []*database.ProjectFactEdge) string {
 	if len(edges) == 0 {
-		return fmt.Sprintf("- %s:\n  （暂无）", bodySyncLinksHead)
+		return fmt.Sprintf("- %s:\n  (None)", bodySyncLinksHead)
 	}
 	var b strings.Builder
 	b.WriteString("- ")
@@ -185,7 +186,7 @@ func formatBodySyncLinksBlock(edges []*database.ProjectFactEdge) string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
-// ResolveFactLinksForUpsert 合并显式 links、links_text 与 body 解析结果。
+// ResolveFactLinksForUpsert combines explicit links, links_text, and links parsed from the body.
 func ResolveFactLinksForUpsert(explicit []database.ProjectFactEdgeFromInput, linksText *string, body string, explicitSet bool) ([]database.ProjectFactEdgeFromInput, bool, error) {
 	if explicitSet {
 		if len(explicit) > 0 {
@@ -209,7 +210,7 @@ func ResolveFactLinksForUpsert(explicit []database.ProjectFactEdgeFromInput, lin
 	return nil, false, nil
 }
 
-// MergeLinkFromInputsUnique 合并多组 from 入边输入并去重。
+// MergeLinkFromInputsUnique combines and deduplicates multiple groups of incoming-edge inputs using from semantics.
 func MergeLinkFromInputsUnique(groups ...[]database.ProjectFactEdgeFromInput) []database.ProjectFactEdgeFromInput {
 	seen := map[string]struct{}{}
 	var out []database.ProjectFactEdgeFromInput
@@ -232,7 +233,7 @@ func MergeLinkFromInputsUnique(groups ...[]database.ProjectFactEdgeFromInput) []
 	return out
 }
 
-// MergeLinkInputsUnique 合并多组 link 输入并去重（内部出边写入用）。
+// MergeLinkInputsUnique combines and deduplicates multiple groups of link inputs for internal outgoing-edge writes.
 func MergeLinkInputsUnique(groups ...[]database.ProjectFactEdgeInput) []database.ProjectFactEdgeInput {
 	seen := map[string]struct{}{}
 	var out []database.ProjectFactEdgeInput

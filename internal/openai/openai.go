@@ -18,14 +18,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// Client 统一封装与OpenAI兼容模型交互的HTTP客户端。
+// Client provides a unified HTTP client for interacting with OpenAI-compatible models.
 type Client struct {
 	httpClient *http.Client
 	config     *config.OpenAIConfig
 	logger     *zap.Logger
 }
 
-// APIError 表示OpenAI接口返回的非200错误。
+// APIError represents a non-200 error returned by an OpenAI-compatible endpoint.
 type APIError struct {
 	StatusCode int
 	Body       string
@@ -35,16 +35,16 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("openai api error: status=%d body=%s", e.StatusCode, e.Body)
 }
 
-// normalizeStreamingDelta 将可能是“累计片段/重发片段”的内容归一化为“纯增量”。
-// 部分兼容网关会返回累计 content；若直接 append 会出现重复文本。
+// normalizeStreamingDelta normalizes content that may be an accumulated or retransmitted fragment into a pure delta.
+// Some compatible gateways return accumulated content; appending it directly would duplicate text.
 //
-// 注意：
-//   - 不做「任意后缀与前缀重叠」合并；流式可能在重复字符边界分片（"194"+"43"→"19443"）。
-//   - HasPrefix 仅在 incoming 严格长于 current 时视为累计全文，否则会把分片产生的第二个相同
-//     单字/单码点（叠字、44、22 等）误判为「整段重复」而吞字。
-//   - incoming==current 仅当 current 长度 >1 个码点时才视为整包重发；单码点重复必须走拼接。
-//   - 不再使用「current 以 incoming 结尾则丢弃」：否则 "1943"+"43" 会误吞增量（19443 显示成 1943）。
-//     若网关重复发送尾部片段，应重复送完整累计串，由 HasPrefix 分支去重。
+// Notes:
+//   - Do not merge arbitrary suffix/prefix overlap; streaming may split at a repeated-character boundary ("194"+"43" → "19443").
+//   - HasPrefix treats incoming as accumulated text only when it is strictly longer than current. Otherwise, the second identical
+//     character/code point produced by chunking (repeated words, 44, 22, etc.) could be mistaken for a full duplicate and dropped.
+//   - incoming==current is treated as a full-packet retransmission only when current is longer than one code point; repeated single code points must be concatenated.
+//   - Do not discard incoming merely because current ends with it; otherwise "1943"+"43" incorrectly drops the delta (displaying 1943 instead of 19443).
+//     If a gateway retransmits a trailing fragment, it should resend the complete accumulated string so the HasPrefix branch can deduplicate it.
 func normalizeStreamingDelta(current, incoming string) (next, delta string) {
 	if incoming == "" {
 		return current, ""
@@ -61,7 +61,7 @@ func normalizeStreamingDelta(current, incoming string) (next, delta string) {
 	return current + incoming, incoming
 }
 
-// NewClient 创建一个新的OpenAI客户端。
+// NewClient creates a new OpenAI client.
 func NewClient(cfg *config.OpenAIConfig, httpClient *http.Client, logger *zap.Logger) *Client {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
@@ -76,12 +76,12 @@ func NewClient(cfg *config.OpenAIConfig, httpClient *http.Client, logger *zap.Lo
 	}
 }
 
-// UpdateConfig 动态更新OpenAI配置。
+// UpdateConfig updates the OpenAI configuration dynamically.
 func (c *Client) UpdateConfig(cfg *config.OpenAIConfig) {
 	c.config = cfg
 }
 
-// ChatCompletion 调用 /chat/completions 接口。
+// ChatCompletion calls the /chat/completions endpoint.
 func (c *Client) ChatCompletion(ctx context.Context, payload interface{}, out interface{}) error {
 	if c == nil {
 		return fmt.Errorf("openai client is not initialized")
@@ -175,8 +175,8 @@ func (c *Client) ChatCompletion(ctx context.Context, payload interface{}, out in
 	return nil
 }
 
-// ChatCompletionStream 调用 /chat/completions 的流式模式（stream=true），并在每个 delta 到达时回调 onDelta。
-// 返回最终拼接的 content（只拼 content delta；工具调用 delta 未做处理）。
+// ChatCompletionStream calls /chat/completions in streaming mode (stream=true) and invokes onDelta for each arriving delta.
+// It returns the final concatenated content (content deltas only; tool-call deltas are not processed).
 func (c *Client) ChatCompletionStream(ctx context.Context, payload interface{}, onDelta func(delta string) error) (string, error) {
 	if c == nil {
 		return "", fmt.Errorf("openai client is not initialized")
@@ -215,7 +215,7 @@ func (c *Client) ChatCompletionStream(ctx context.Context, payload interface{}, 
 	}
 	defer resp.Body.Close()
 
-	// 非200：读完 body 返回
+	// Non-200: read the complete body and return
 	if resp.StatusCode != http.StatusOK {
 		respBody, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
@@ -228,7 +228,7 @@ func (c *Client) ChatCompletionStream(ctx context.Context, payload interface{}, 
 	}
 
 	type streamDelta struct {
-		// OpenAI 兼容流式通常使用 content；但部分兼容实现可能用 text。
+		// OpenAI-compatible streams normally use content, but some compatible implementations may use text.
 		Content string `json:"content,omitempty"`
 		Text    string `json:"text,omitempty"`
 	}
@@ -249,7 +249,7 @@ func (c *Client) ChatCompletionStream(ctx context.Context, payload interface{}, 
 	var full strings.Builder
 	fullText := ""
 
-	// 典型 SSE 结构：
+	// Typical SSE structure:
 	// data: {...}\n\n
 	// data: [DONE]\n\n
 	for {
@@ -274,7 +274,7 @@ func (c *Client) ChatCompletionStream(ctx context.Context, payload interface{}, 
 
 		var chunk streamResponse
 		if err := json.Unmarshal([]byte(dataStr), &chunk); err != nil {
-			// 解析失败跳过（兼容各种兼容层的差异）
+			// Skip parse failures to accommodate differences among compatibility layers
 			continue
 		}
 		if chunk.Error != nil && strings.TrimSpace(chunk.Error.Message) != "" {
@@ -313,7 +313,7 @@ func (c *Client) ChatCompletionStream(ctx context.Context, payload interface{}, 
 	return full.String(), nil
 }
 
-// StreamToolCall 流式工具调用的累积结果（arguments 以字符串形式拼接，留给上层再解析为 JSON）。
+// StreamToolCall is the accumulated result of a streaming tool call (arguments are concatenated as a string for the upper layer to parse as JSON).
 type StreamToolCall struct {
 	Index           int
 	ID              string
@@ -322,7 +322,7 @@ type StreamToolCall struct {
 	FunctionArgsStr string
 }
 
-// ChatCompletionStreamWithToolCalls 流式模式：同时把 content delta 实时回调，并在结束后返回 tool_calls 和 finish_reason。
+// ChatCompletionStreamWithToolCalls streams content deltas through the callback and returns tool_calls and finish_reason when complete.
 func (c *Client) ChatCompletionStreamWithToolCalls(
 	ctx context.Context,
 	payload interface{},
@@ -376,7 +376,7 @@ func (c *Client) ChatCompletionStreamWithToolCalls(
 		}
 	}
 
-	// delta tool_calls 的增量结构
+	// Incremental structure of delta tool_calls
 	type toolCallFunctionDelta struct {
 		Name      string `json:"name,omitempty"`
 		Arguments string `json:"arguments,omitempty"`
@@ -439,7 +439,7 @@ func (c *Client) ChatCompletionStreamWithToolCalls(
 
 		var chunk streamResponse2
 		if err := json.Unmarshal([]byte(dataStr), &chunk); err != nil {
-			// 兼容：解析失败跳过
+			// Compatibility: skip parse failures
 			continue
 		}
 		if chunk.Error != nil && strings.TrimSpace(chunk.Error.Message) != "" {
@@ -496,12 +496,12 @@ func (c *Client) ChatCompletionStreamWithToolCalls(
 		}
 	}
 
-	// 组装 tool calls
+	// Assemble tool calls
 	indices := make([]int, 0, len(toolCallAccums))
 	for idx := range toolCallAccums {
 		indices = append(indices, idx)
 	}
-	// 手写简单排序（避免额外 import）
+	// Simple inline sort to avoid an additional import
 	for i := 0; i < len(indices); i++ {
 		for j := i + 1; j < len(indices); j++ {
 			if indices[j] < indices[i] {
@@ -537,7 +537,7 @@ func (c *Client) ChatCompletionStreamWithToolCalls(
 	return full.String(), toolCalls, finishReason, nil
 }
 
-// ModelsListResponse 表示 OpenAI 兼容 GET /models 响应。
+// ModelsListResponse represents an OpenAI-compatible GET /models response.
 type ModelsListResponse struct {
 	Object string `json:"object"`
 	Data   []struct {
@@ -547,7 +547,7 @@ type ModelsListResponse struct {
 	} `json:"data"`
 }
 
-// ListModels 调用 GET {baseURL}/models 获取可用模型 id 列表（按字典序）。
+// ListModels calls GET {baseURL}/models and returns available model IDs in lexicographic order.
 func (c *Client) ListModels(ctx context.Context) ([]string, error) {
 	if c == nil {
 		return nil, fmt.Errorf("openai client is not initialized")
