@@ -1,0 +1,61 @@
+# CyberStrikeAI — Docker Compose
+#
+#   docker compose up -d --build
+#
+# The server data (SQLite databases, conversation artifacts, workspace) is
+# persisted under ./data (bind mount -> /app/data). admin@localhost etc.
+#
+# Default admin password:
+#   Set CYBERSTRIKE_ADMIN_PASSWORD before the first `up` to have the container
+#   bootstrap the built-in admin with that password. If unset, the container
+#   starts with whatever password the system generated or already stored.
+#
+#   $ CYBERSTRIKE_ADMIN_PASSWORD='admin123' docker compose up -d --build
+#
+# Configuration: this mounts ./config.yaml (see below) so your host-side
+# settings apply (mcp.enabled, port, agent.system_prompt_path, ...). The binding
+# is read-only; edit ./config.yaml on the host and restart to apply changes.
+#
+# Default admin password:  admin / admin123
+#   The container applies CYBERSTRIKE_ADMIN_PASSWORD on every start (default
+#   admin123). This means restarting/recreating the container (without deleting
+#   ./data) will RESET the admin password back to this value. To override:
+#       $ CYBERSTRIKE_ADMIN_PASSWORD='YourPass123!' docker compose up -d
+#   admin123 is a weak default — change it (or drop the env) for anything
+#   beyond a local sandbox.
+#
+# Default HTTPS with a self-signed cert -> open https://localhost:7123 .
+# For plain HTTP use `command: ["--http"]`.
+
+services:
+  cyberstrike-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cyberstrike-ai:latest
+    container_name: cyberstrike-ai
+    restart: unless-stopped
+    ports:
+      - "7123:7123"   # Main Web UI (HTTPS by default)
+      - "7134:7134"   # Optional MCP server (enable via config mcp.enabled)
+    environment:
+      - CYBERSTRIKE_ADMIN_PASSWORD=${CYBERSTRIKE_ADMIN_PASSWORD:-admin123}
+      - CYBERSTRIKE_HTTPS=1
+    volumes:
+      - ./data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+    command: ["--https"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -k -sf -o /dev/null https://127.0.0.1:7123/ || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    cap_add:
+      - SYS_PTRACE
+    stdin_open: true
+    tty: true

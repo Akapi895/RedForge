@@ -1,0 +1,71 @@
+# VCS
+.git
+.gitignore
+
+# Runtime data (mounted as Docker volumes instead)
+data/
+chat_uploads/
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+tmp/
+
+# Local configuration and secrets
+config.yaml
+config.local.yaml
+config.yaml.backup
+*.backup
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Upgrade backups
+.upgrade-backup/
+
+# Build artifacts
+cyberstrike-ai
+cyberstrike-ai.exe
+*.test
+bin/
+dist/
+build/
+.build/
+target/
+
+# Logs
+/log/
+*.log
+*.bak
+
+# Python virtualenvs
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Go
+/vendor/
+
+# Node
+node_modules/
+
+# Docs / screenshots / editor junk
+docs/
+images/
+plugins/
+.github/
+README*.md
+SECURITY.md
+LICENSE
+*.md
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
