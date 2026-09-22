@@ -36,7 +36,6 @@ Project là container để gom nhiều conversation, fact, asset, vulnerability
    - **Tool scope** (công cụ được phép dùng).
 
 ![Role selector](./assets/basic-usage/03-role-selector.png)
-
 ---
 
 ### Bước 4: Chọn Agent Mode
@@ -78,8 +77,6 @@ Click **Send** (hoặc Enter).
   - Đợi phê duyệt (HITL): hiển thị countdown.
   - Hoàn thành: hiển thị summary.
 - **Stop task**: Click nút **Stop** để hủy tác vụ đang chạy.
-
-![Timeline tool calls](./assets/basic-usage/05-timeline.png)
 
 ---
 

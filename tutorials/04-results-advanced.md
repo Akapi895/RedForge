@@ -69,8 +69,6 @@ Theo dõi và quản lý MCP servers đã cấu hình:
 - **MCP Management**: Thêm/xóa external servers, test connection.
 - Tool MCP xuất hiện tự động trong Chat khi server kết nối thành công.
 
-![MCP Monitor](./assets/advanced/02-mcp.png)
-
 ### Knowledge Base
 
 Kho tri thức (tài liệu, CVE, best practices) để AI truy xuất khi cần (RAG).
@@ -79,8 +77,6 @@ Kho tri thức (tài liệu, CVE, best practices) để AI truy xuất khi cần
 - **Scan** → Phát hiện item mới.
 - **Build Index** → Tạo vector embeddings.
 - AI tự động retrieval khi cần. Xem **Retrieval Logs** để theo dõi.
-
-![Knowledge Base](./assets/advanced/03-knowledge.png)
 
 ### Skills
 
@@ -100,8 +96,6 @@ Agents là sub-agents (multi-agent) định nghĩa bằng file Markdown trong `a
 - **Sub**: Agent con, thực thi tác vụ cụ thể.
 - Cấu hình: tools, max iterations, instruction (system prompt).
 
-![Agents Management](./assets/advanced/05-agents.png)
-
 ### Roles
 
 Role là persona (prompt + tool scope) cho agent.
@@ -109,8 +103,6 @@ Role là persona (prompt + tool scope) cho agent.
 - Chọn trong Chat → Tool list tự cập nhật.
 - Tạo: Name, icon (emoji), description, user prompt, tools.
 - Enable/disable role.
-
-![Roles list](./assets/advanced/06-roles.png)
 
 ---
 

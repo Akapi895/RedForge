@@ -89,8 +89,6 @@ Server sẽ khởi động trên **port 7123** (HTTPS) và **port 7134** (MCP).
   - Username: `admin`
   - Password: `admin123` (hoặc giá trị bạn set qua `CYBERSTRIKE_ADMIN_PASSWORD`)
 
-![Login page](./assets/installation/02-login.png)
-
 ---
 
 ## 2.6 Cấu hình AI Model
